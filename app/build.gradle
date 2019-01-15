@@ -1,0 +1,172 @@
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-kapt'
+
+apply plugin: 'kotlin-android-extensions'
+
+
+ext {
+    dagger_version = '2.17'
+
+    architecture_components_version = '1.1.1'
+
+    espresso_core_version = '3.0.2'
+
+    // major version: 1 decimal digit plus a little bit more
+    version_major = 0
+    // minor version: 3 decimal digits
+    version_minor = 0
+    // patch version: up to 5 decimal digits
+    version_patch = 1 // should be build number from build system
+}
+
+android {
+    compileSdkVersion compile_sdk_version.toInteger()
+    buildToolsVersion "$build_tools_version"
+
+    defaultConfig {
+        applicationId "com.couchbase.android.sofapix"
+
+        minSdkVersion 19
+        targetSdkVersion 27
+
+        versionCode = (version_major * (10**8)) + (version_minor * (10**5)) + version_patch
+        versionName = "${version_major}.${version_minor}.${version_patch}@${git_commit}"
+
+        buildConfigField "String", "BUILD_COMMIT", "\"${git_commit}\""
+        buildConfigField "String", "BUILD_TIME", "\"${build_time}\""
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    google()
+    maven { url "http://mobile.maven.couchbase.com/maven2/dev/" }
+    jcenter()
+
+}
+
+dependencies {
+    kapt "com.google.dagger:dagger-compiler:$dagger_version"
+    kapt "com.google.dagger:dagger-android-processor:$dagger_version"
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    // Support Lib
+    implementation "com.android.support:appcompat-v7:$support_lib_version"
+    implementation "com.android.support:recyclerview-v7:$support_lib_version"
+    implementation "com.android.support:design:$support_lib_version"
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+
+    // Dagger
+    implementation "com.google.dagger:dagger:$dagger_version"
+    implementation "com.google.dagger:dagger-android-support:$dagger_version"
+
+    // ViewModel and LiveData
+    implementation "android.arch.lifecycle:extensions:${architecture_components_version}"
+    implementation "android.arch.lifecycle:common-java8:${architecture_components_version}"
+    implementation "android.arch.lifecycle:reactivestreams:${architecture_components_version}"
+
+    // RxJava
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.0'
+    implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    implementation 'io.reactivex.rxjava2:rxkotlin:2.3.0'
+
+    // Couchbase
+    implementation 'com.couchbase.lite:couchbase-lite-android-ee:2.1.0'
+
+    // Java time backport
+    implementation 'com.jakewharton.threetenabp:threetenabp:1.1.1'
+
+    testImplementation 'junit:junit:4.12'
+
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation "com.android.support.test.espresso:espresso-core:$espresso_core_version"
+}
+
+
+def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*']
+
+apply plugin: 'findbugs'
+def findbugsAll = task('findbugs') {
+    description 'Findbugs with all reports'
+    group 'verification'
+}
+
+['Html', 'Xml'].each { reportType ->
+    findbugsAll.dependsOn task("findbugs${reportType}", type: FindBugs) {
+        description "Findbugs with $reportType report"
+        group 'verification'
+
+        dependsOn ':app:compileDebugSources'
+
+        findbugs.toolVersion = "3.0.1"
+
+        effort = "max"
+        reportLevel = "medium"
+        ignoreFailures = false
+
+        source = fileTree("$project.rootDir/src/main/java")
+        classes = fileTree(dir: "$project.buildDir/intermediates/classes/debug/xyz", excludes: fileFilter)
+        classpath = files()
+
+        excludeFilter = file("$project.rootDir/tools/findbugs/findbugs.xml")
+
+        reports {
+            xml {
+                enabled = (reportType == "Xml")
+                setDestination(file("$project.buildDir/reports/findbugs.xml"))
+            }
+            html {
+                enabled = (reportType == "Html")
+                setDestination(file("$project.buildDir/reports/findbugs.html"))
+            }
+        }
+    }
+}
+
+apply plugin: 'jacoco'
+task createDebugCoverageReportLocal(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
+    description 'Jacoco'
+    group 'verification'
+
+    jacoco.toolVersion '0.8.1'
+
+    executionData = files("$project.buildDir/jacoco/testDebugUnitTest.exec")
+    classDirectories = fileTree(dir: "$project.buildDir/intermediates/classes/debug/xyz", excludes: fileFilter)
+    sourceDirectories = fileTree('src/main/java/')
+
+    reports {
+        xml {
+            enabled = true
+            setDestination(file("$project.buildDir/reports/coverage.xml"))
+        }
+        html {
+            enabled = true
+            setDestination(file("$project.buildDir/reports/coverage"))
+        }
+    }
+}
+task checkLocal(dependsOn: ['lint', 'findbugsHtml', 'assemble', 'test'])
+
