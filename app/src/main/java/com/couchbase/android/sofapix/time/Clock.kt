@@ -18,13 +18,13 @@ package com.couchbase.android.sofapix.time
 import android.os.SystemClock
 import org.threeten.bp.Instant
 
-
 var CLOCK: Clock = StandardClock
     private set(clock) {
         field = clock
     }
 
 // Allow unit tests to control time.
+@Suppress("FunctionNaming")
 fun SET_CLOCK(clock: Clock) {
     CLOCK = clock
 }

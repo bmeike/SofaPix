@@ -42,13 +42,9 @@ class ViewModelFactory @Inject constructor(
                 ?.value
             ?: throw IllegalArgumentException("Unknown model class: ${modelClass}")
 
-        try {
-            @Suppress("UNCHECKED_CAST") val model = provider.get() as T
-            LOG.d(TAG, "factory: ${this}, key: ${modelClass}, provider: ${provider}, model: ${model}")
-            return model
-        } catch (e: Exception) {
-            throw RuntimeException(e)
-        }
+        @Suppress("UNCHECKED_CAST") val model = provider.get() as T
+        LOG.d(TAG, "factory: ${this}, key: ${modelClass}, provider: ${provider}, model: ${model}")
+        return model
     }
 }
 
