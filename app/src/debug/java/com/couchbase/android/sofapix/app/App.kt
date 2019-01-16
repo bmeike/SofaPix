@@ -1,6 +1,4 @@
 //
-//
-//
 // Copyright (c) 2019 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +18,7 @@ package com.couchbase.android.sofapix.app
 import android.app.Application
 import com.couchbase.android.sofapix.logging.DebugLogger
 import com.couchbase.android.sofapix.logging.SET_LOGGER
+
 
 class SofaPixApp : Application() {
     override fun onCreate() {

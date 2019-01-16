@@ -42,5 +42,5 @@ object SystemOutLogger : Logger {
 
     override fun d(tag: String, message: String) = print("D", tag, message)
 
-    fun print(sev: String, tag: String, message: String) = println("$sev: @$tag $message")
+    private fun print(sev: String, tag: String, message: String) = println("$sev: @$tag $message")
 }

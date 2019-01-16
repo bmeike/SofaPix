@@ -21,6 +21,7 @@ import com.couchbase.android.sofapix.logging.SET_LOGGER
 import com.couchbase.android.sofapix.logging.SystemOutLogger
 import org.junit.Before
 
+
 abstract class TestWithEnv {
     @Before
     fun setLogger() {

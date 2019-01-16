@@ -1,6 +1,4 @@
 //
-//
-//
 // Copyright (c) 2019 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,16 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-package com.couchbase.android.sofapix.app
+package com.couchbase.android.sofapix.db
 
-import android.app.Application
-import com.couchbase.android.sofapix.logging.ReleaseLogger
-import com.couchbase.android.sofapix.logging.SET_LOGGER
+import org.threeten.bp.Instant
 
 
-class SofaPixApp : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        SET_LOGGER(ReleaseLogger)
-    }
-}
+data class Pict(var owner: String, var description: String, var timestamp: Instant, var photo: Any?)
+
+typealias Pix = List<Pict>

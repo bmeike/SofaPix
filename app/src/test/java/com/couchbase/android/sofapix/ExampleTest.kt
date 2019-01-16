@@ -21,7 +21,7 @@ import com.couchbase.android.sofapix.logging.LOG
 import org.junit.Test
 
 
-const val TAG = "ExampleTest"
+private const val TAG = "ExampleTest"
 
 class ExampleTest : TestWithEnv() {
 

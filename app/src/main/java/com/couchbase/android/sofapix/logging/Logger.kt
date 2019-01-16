@@ -1,6 +1,4 @@
 //
-//
-//
 // Copyright (c) 2019 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,9 +17,13 @@ package com.couchbase.android.sofapix.logging
 
 
 var LOG: Logger = NullLogger
-    private set(logger: Logger) { field = logger }
+    private set(logger) {
+        field = logger
+    }
 
-fun SET_LOGGER(logger: Logger) { LOG = logger }
+fun SET_LOGGER(logger: Logger) {
+    LOG = logger
+}
 
 interface Logger {
     fun e(tag: String, message: String)
