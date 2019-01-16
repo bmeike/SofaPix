@@ -17,6 +17,7 @@
 //
 package com.couchbase.android.sofapix.logging
 
+
 object ReleaseLogger : Logger {
     override fun e(tag: String, message: String, ex: Throwable) {
         android.util.Log.e(tag, message, ex)

@@ -1,6 +1,4 @@
 //
-//
-//
 // Copyright (c) 2019 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,15 +13,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-package com.couchbase.android.sofapix.app
+package com.couchbase.android.sofapix.time
 
-import android.app.Application
-import com.couchbase.android.sofapix.logging.ReleaseLogger
-import com.couchbase.android.sofapix.logging.SET_LOGGER
+import android.os.SystemClock
+import org.threeten.bp.Instant
 
-class SofaPixApp : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        SET_LOGGER(ReleaseLogger)
+
+const val MS_PER_SEC = 1000L
+
+var CLOCK: Clock = StandardClock
+    private set(clock) {
+        field = clock
     }
+
+// Allow unit tests to control time.
+fun SET_CLOCK(clock: Clock) {
+    CLOCK = clock
+}
+
+interface Clock {
+    fun getElapsedTime(): Long
+    fun now(): Instant
+}
+
+object StandardClock : Clock {
+    override fun getElapsedTime() = SystemClock.elapsedRealtime()
+    override fun now(): Instant = Instant.now()
 }

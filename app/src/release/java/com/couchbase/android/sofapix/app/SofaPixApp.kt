@@ -15,16 +15,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-package com.couchbase.android.sofapix
+package com.couchbase.android.sofapix.app
 
+import android.app.Application
+import com.couchbase.android.sofapix.logging.ReleaseLogger
 import com.couchbase.android.sofapix.logging.SET_LOGGER
-import com.couchbase.android.sofapix.logging.SystemOutLogger
-import org.junit.Before
 
 
-abstract class TestWithEnv {
-    @Before
-    fun setLogger() {
-        SET_LOGGER(SystemOutLogger)
+class SofaPixApp : SofaPix() {
+    override fun onCreate() {
+        super.onCreate()
+        SET_LOGGER(ReleaseLogger)
     }
 }

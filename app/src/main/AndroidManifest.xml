@@ -17,7 +17,8 @@
 <manifest
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
-        package="com.couchbase.android.sofapix">
+        package="com.couchbase.android.sofapix"
+        >
 
     <application
             tools:ignore="GoogleAppIndexingWarning"
@@ -25,21 +26,27 @@
             android:label="@string/app_name"
             android:icon="@mipmap/ic_launcher"
             android:roundIcon="@mipmap/ic_launcher_round"
-            android:theme="@style/AppTheme"
+            android:theme="@style/SofaPixTheme"
             android:supportsRtl="true"
             android:allowBackup="true"
             android:fullBackupContent="@xml/backup_rules"
-    >
+            >
         <activity
                 android:name=".MainActivity"
                 android:label="@string/app_name"
-                android:theme="@style/AppTheme.NoActionBar">
+                android:theme="@style/SofaPixTheme.NoActionBar"
+                >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity
+                android:name=".DetailActivity"
+                android:theme="@style/SofaPixTheme.NoActionBar"
+                android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
+                />
     </application>
 
 </manifest>

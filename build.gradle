@@ -10,6 +10,8 @@ buildscript {
 
         support_lib_version = '28.0.0'
 
+        detekt_version = '1.0.0-RC12'
+
         build_time = Instant.now().toString()
 
         git_commit = 'git rev-parse --short HEAD'.execute([], project.rootDir).text.trim() +
@@ -18,12 +20,16 @@ buildscript {
 
     repositories {
         google()
+        maven { url "https://plugins.gradle.org/m2/" }
+        mavenCentral()
         jcenter()
 
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.3.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlin_version}"
+        classpath "io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${detekt_version}"
+        classpath "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.9"
     }
 }
 

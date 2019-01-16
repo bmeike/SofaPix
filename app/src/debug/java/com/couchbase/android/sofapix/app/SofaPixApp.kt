@@ -1,6 +1,4 @@
 //
-//
-//
 // Copyright (c) 2019 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,16 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-package com.couchbase.android.sofapix
+package com.couchbase.android.sofapix.app
 
+import com.couchbase.android.sofapix.logging.DebugLogger
 import com.couchbase.android.sofapix.logging.SET_LOGGER
-import com.couchbase.android.sofapix.logging.SystemOutLogger
-import org.junit.Before
 
 
-abstract class TestWithEnv {
-    @Before
-    fun setLogger() {
-        SET_LOGGER(SystemOutLogger)
+class SofaPixApp : SofaPix() {
+    override fun onCreate() {
+        super.onCreate()
+        SET_LOGGER(DebugLogger)
     }
 }
