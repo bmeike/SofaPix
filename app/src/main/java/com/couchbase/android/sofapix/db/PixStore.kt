@@ -15,9 +15,22 @@
 //
 package com.couchbase.android.sofapix.db
 
-import org.threeten.bp.Instant
+import com.couchbase.android.sofapix.time.CLOCK
+import javax.inject.Inject
 
 
-data class Pict(var owner: String, var description: String, var timestamp: Instant, var photo: Any?)
+data class Pict(val id: String, val owner: String, val description: String, val updated: Long, val photo: Any?)
 
 typealias Pix = List<Pict>
+
+private val pix = listOf(
+    Pict("feed1", "Louvre", "Waterlilies", CLOCK.now().epochSecond, null),
+    Pict("feed2", "Prado", "The Dog", CLOCK.now().epochSecond, null),
+    Pict("feed3", "Rijksmuseum", "The Milkmaid", CLOCK.now().epochSecond, null)
+)
+
+class PixStore @Inject constructor() {
+    fun fetchPix(): Pix = pix
+
+    fun fetchPict(pictId: String) = pix.firstOrNull { pict -> pict.id == pictId }
+}

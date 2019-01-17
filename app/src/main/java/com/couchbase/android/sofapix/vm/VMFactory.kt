@@ -17,10 +17,12 @@ package com.couchbase.android.sofapix.vm
 
 import android.arch.lifecycle.ViewModel
 import android.arch.lifecycle.ViewModelProvider
+import com.couchbase.android.sofapix.DetailActivity
 import com.couchbase.android.sofapix.MainActivity
+import com.couchbase.android.sofapix.NavModule
 import com.couchbase.android.sofapix.logging.LOG
-import dagger.Component
 import dagger.MapKey
+import dagger.Subcomponent
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.reflect.KClass
@@ -31,7 +33,7 @@ private const val TAG = "VMFactory"
 @MapKey
 annotation class ViewModelKey(val value: KClass<out ViewModel>)
 
-class ViewModelFactory @Inject constructor(
+class VMFactory @Inject constructor(
     private val providers: Map<Class<out ViewModel>, @JvmSuppressWildcards Provider<ViewModel>>
 ) : ViewModelProvider.Factory {
 
@@ -48,7 +50,8 @@ class ViewModelFactory @Inject constructor(
     }
 }
 
-@Component(modules = [MainViewModule::class])
-interface ModelComponent {
+@Subcomponent(modules = [NavModule::class, PixVMModule::class, PictVMModule::class])
+interface ViewModelFactory {
     fun inject(act: MainActivity)
+    fun inject(act: DetailActivity)
 }

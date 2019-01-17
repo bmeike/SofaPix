@@ -19,26 +19,32 @@ import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
+import android.text.format.DateUtils
 import android.view.Menu
 import android.view.MenuItem
 import com.couchbase.android.sofapix.app.APP
-import com.couchbase.android.sofapix.db.Pix
-import com.couchbase.android.sofapix.view.PixAdapter
-import com.couchbase.android.sofapix.vm.PixVM
+import com.couchbase.android.sofapix.db.Pict
+import com.couchbase.android.sofapix.vm.PictVM
 import com.couchbase.android.sofapix.vm.VMFactory
-import kotlinx.android.synthetic.main.activity_main.fab
 import kotlinx.android.synthetic.main.activity_main.toolbar
-import kotlinx.android.synthetic.main.content_main.pixList
+import kotlinx.android.synthetic.main.content_detail.delete
+import kotlinx.android.synthetic.main.content_detail.description
+import kotlinx.android.synthetic.main.content_detail.owner
+import kotlinx.android.synthetic.main.content_detail.update
+import kotlinx.android.synthetic.main.content_detail.updated
 import javax.inject.Inject
 
 
-class MainActivity : AppCompatActivity() {
+const val PARAM_PICT_ID = "sofapix.PICT_ID"
+
+
+class DetailActivity : AppCompatActivity() {
     @Inject
     lateinit var vmFactory: VMFactory
 
-    private lateinit var viewModel: PixVM
-    private lateinit var adapter: PixAdapter
+    private lateinit var viewModel: PictVM
+
+    private var pictId: String? = null
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
@@ -57,24 +63,33 @@ class MainActivity : AppCompatActivity() {
 
         APP?.vmFactory()?.inject(this)
 
-        setContentView(R.layout.activity_main)
+        pictId = intent.getStringExtra(PARAM_PICT_ID)
+
+        setContentView(R.layout.activity_detail)
 
         setSupportActionBar(toolbar)
 
-        viewModel = ViewModelProviders.of(this, vmFactory).get(PixVM::class.java)
+        viewModel = ViewModelProviders.of(this, vmFactory).get(PictVM::class.java)
 
-        pixList.hasFixedSize()
-        pixList.layoutManager = LinearLayoutManager(this)
-        adapter = PixAdapter(viewModel)
-        pixList.adapter = adapter
+        viewModel.pict.observe(this, Observer<Pict?> { pict -> setPict(pict) })
 
-        viewModel.pix.observe(this, Observer<Pix> { pix -> adapter.setPix(pix) })
+        delete.setOnClickListener { viewModel.deletePict(pictId) }
 
-        fab.setOnClickListener { viewModel.editPict(null) }
+        update.setOnClickListener { viewModel.updatePict(pictId, owner.text.toString(), description.text.toString()) }
     }
 
     override fun onResume() {
         super.onResume()
-        viewModel.fetchPix()
+        viewModel.fetchPict(pictId)
+    }
+
+    private fun setPict(pict: Pict?) {
+        owner.setText(pict?.owner)
+        description.setText(pict?.description)
+        updated.text = if (pict == null) {
+            null
+        } else {
+            DateUtils.getRelativeTimeSpanString(pict.updated * 1000)
+        }
     }
 }

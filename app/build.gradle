@@ -32,6 +32,7 @@ android {
         applicationId "com.couchbase.android.sofapix"
 
         minSdkVersion 19
+        //noinspection OldTargetApi
         targetSdkVersion 27
 
         versionCode = (version_major * (10**8)) + (version_minor * (10**5)) + version_patch

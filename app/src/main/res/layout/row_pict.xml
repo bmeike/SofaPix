@@ -8,12 +8,23 @@
         android:layout_margin="@dimen/frame_margin"
         >
 
+    <ImageView
+            android:id="@+id/thumb"
+            android:layout_width="@dimen/thumb_size"
+            android:layout_height="@dimen/thumb_size"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:srcCompat="@mipmap/ic_launcher"
+            android:contentDescription="@string/pict_thumb"
+            />
+
     <TextView
             android:id="@+id/owner"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/thumb"
+            android:layout_marginStart="@dimen/frame_margin"
             android:theme="@style/SofaPixTheme.Text.Bold"
             tools:text="Louvre"
             />
@@ -25,18 +36,21 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:theme="@style/SofaPixTheme.Text.Italic"
-            tools:text="Mona Lisa"
+            tools:text="right now"
             />
 
     <TextView
             android:id="@+id/description"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/thumb"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/owner"
             app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginStart="@dimen/frame_margin"
             android:theme="@style/SofaPixTheme.Text"
+            android:minLines="2"
+            android:maxLines="5"
             tools:text="Stolen, once, in 1911.  Nobody noticed for days"
             />
 </android.support.constraint.ConstraintLayout>

@@ -17,34 +17,39 @@ package com.couchbase.android.sofapix.vm
 
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
+import com.couchbase.android.sofapix.Navigator
 import com.couchbase.android.sofapix.db.Pict
-import com.couchbase.android.sofapix.db.Pix
-import com.couchbase.android.sofapix.logging.LOG
-import com.couchbase.android.sofapix.time.CLOCK
+import com.couchbase.android.sofapix.db.PixStore
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
 import javax.inject.Inject
 
 
-private const val TAG = "MainVM"
+class PictVM @Inject constructor(private val nav: Navigator, private val db: PixStore) : ViewModel() {
+    val pict: MutableLiveData<Pict?> = MutableLiveData()
 
-class MainViewModel @Inject constructor() : ViewModel() {
-    val pix: MutableLiveData<Pix> = MutableLiveData()
-
-    fun addPicture() {
-        LOG.i(TAG, "add a picture")
+    fun fetchPict(pictId: String?) {
+        pict.value = if (pictId == null) {
+            null
+        } else {
+            db.fetchPict(pictId)
+        }
     }
 
-    fun getPix() {
-        pix.value = listOf(Pict("louvre", "mona lisa", CLOCK.now(), null))
+    fun updatePict(pictId: String?, owner: String, desc: String) {
+        nav.mainPage()
+    }
+
+    fun deletePict(pictId: String?) {
+        nav.mainPage()
     }
 }
 
 @Module
-interface MainViewModule {
+interface PictVMModule {
     @Binds
     @IntoMap
-    @ViewModelKey(MainViewModel::class)
-    fun bindViewModel(vm: MainViewModel): ViewModel
+    @ViewModelKey(PictVM::class)
+    fun bindViewModel(vm: PictVM): ViewModel
 }

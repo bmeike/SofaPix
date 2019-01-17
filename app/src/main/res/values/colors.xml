@@ -2,4 +2,5 @@
     <color name="colorPrimary">#D33931</color>
     <color name="colorPrimaryDark">#A7322F</color>
     <color name="colorAccent">#111111</color>
+    <color name="gray">#aaaaaa</color>
 </resources>

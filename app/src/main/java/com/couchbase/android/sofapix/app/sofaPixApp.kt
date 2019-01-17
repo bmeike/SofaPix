@@ -1,6 +1,4 @@
 //
-//
-//
 // Copyright (c) 2019 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,14 +15,36 @@
 //
 package com.couchbase.android.sofapix.app
 
+import android.annotation.SuppressLint
 import android.app.Application
-import com.couchbase.android.sofapix.logging.ReleaseLogger
-import com.couchbase.android.sofapix.logging.SET_LOGGER
+import com.couchbase.android.sofapix.vm.ViewModelFactory
+import dagger.BindsInstance
+import dagger.Component
 
 
-class SofaPix : Application() {
+var APP: AppFactory? = null
+    private set(appFactory) {
+        field = appFactory
+    }
+
+@SuppressLint("Registered")
+open class SofaPix : Application() {
     override fun onCreate() {
         super.onCreate()
-        SET_LOGGER(ReleaseLogger)
+        APP = DaggerAppFactory.builder().app(this).build()
     }
+}
+
+@Component
+interface AppFactory {
+    @Component.Builder
+    interface Builder {
+        fun build(): AppFactory
+
+        @BindsInstance
+        fun app(sofaPix: SofaPix): Builder
+    }
+
+    fun app(): SofaPix
+    fun vmFactory(): ViewModelFactory
 }

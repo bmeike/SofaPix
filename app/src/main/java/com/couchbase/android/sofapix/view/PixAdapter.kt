@@ -24,14 +24,16 @@ import android.widget.TextView
 import com.couchbase.android.sofapix.R
 import com.couchbase.android.sofapix.db.Pict
 import com.couchbase.android.sofapix.db.Pix
+import com.couchbase.android.sofapix.vm.PixVM
 
-class PixAdapter : RecyclerView.Adapter<PictViewHolder>() {
+class PixAdapter(private val vm: PixVM) : RecyclerView.Adapter<PictViewHolder>() {
     private var pix: Pix? = null
 
     override fun getItemCount() = pix?.size ?: -1
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PictViewHolder {
         return PictViewHolder(
+            vm,
             LayoutInflater
                 .from(parent.context)
                 .inflate(R.layout.row_pict, parent, false)
@@ -54,14 +56,17 @@ class PixAdapter : RecyclerView.Adapter<PictViewHolder>() {
     }
 }
 
-class PictViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-    private val ownerView: TextView = itemView.findViewById(R.id.owner)
-    private val timeView: TextView = itemView.findViewById(R.id.timestamp)
-    private val descView: TextView = itemView.findViewById(R.id.description)
+class PictViewHolder(private val vm: PixVM, pictView: View) : RecyclerView.ViewHolder(pictView) {
+    private val ownerView: TextView = pictView.findViewById(R.id.owner)
+    private val timeView: TextView = pictView.findViewById(R.id.timestamp)
+    private val descView: TextView = pictView.findViewById(R.id.description)
+    private var pict: Pict? = null
 
     fun setPict(pict: Pict) {
+        this.pict = pict
         ownerView.text = pict.owner
-        timeView.text = DateUtils.getRelativeTimeSpanString(pict.timestamp.toEpochMilli())
+        timeView.text = DateUtils.getRelativeTimeSpanString(pict.updated * 1000)
         descView.text = pict.description
+        itemView.setOnClickListener { vm.editPict(pict) }
     }
 }

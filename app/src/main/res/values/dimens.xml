@@ -1,6 +1,12 @@
 <resources>
-    <dimen name="fab_margin">16dp</dimen>
-    <dimen name="frame_margin">7dp</dimen>
+    <dimen name="large_pad">16dp</dimen>
+    <dimen name="medium_pad">8dp</dimen>
+    <dimen name="small_pad">4dp</dimen>
+
+    <dimen name="fab_margin">@dimen/large_pad</dimen>
+    <dimen name="frame_margin">@dimen/small_pad</dimen>
+
+    <dimen name="thumb_size">64dp</dimen>
 
     <dimen name="textSize">18sp</dimen>
 </resources>
