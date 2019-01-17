@@ -18,11 +18,14 @@ package com.couchbase.android.sofapix.vm
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import com.couchbase.android.sofapix.Navigator
+import com.couchbase.android.sofapix.db.CouchbaseResultObserver
 import com.couchbase.android.sofapix.db.Pict
 import com.couchbase.android.sofapix.db.PixStore
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import javax.inject.Inject
 
 
@@ -30,18 +33,30 @@ class PictVM @Inject constructor(private val nav: Navigator, private val db: Pix
     val pict: MutableLiveData<Pict?> = MutableLiveData()
 
     fun fetchPict(pictId: String?) {
-        pict.value = if (pictId == null) {
-            null
-        } else {
-            db.fetchPict(pictId)
+        if (pictId == null) {
+            pict.value = null
+            return
         }
+
+        db.fetchPict(pictId)
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                object : CouchbaseResultObserver<Pict?>(CompositeDisposable()) {
+                    override fun onFailure(e: Throwable) {}
+
+                    override fun onSuccess(data: Pict?) {
+                        pict.value = data
+                    }
+                })
     }
 
     fun updatePict(pictId: String?, owner: String, desc: String) {
+        db.updatePict(pictId, owner, desc)
         nav.mainPage()
     }
 
     fun deletePict(pictId: String?) {
+        db.deletePict(pictId)
         nav.mainPage()
     }
 }

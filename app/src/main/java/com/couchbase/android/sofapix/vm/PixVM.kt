@@ -18,12 +18,15 @@ package com.couchbase.android.sofapix.vm
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import com.couchbase.android.sofapix.Navigator
+import com.couchbase.android.sofapix.db.CouchbaseResultObserver
 import com.couchbase.android.sofapix.db.Pict
 import com.couchbase.android.sofapix.db.Pix
 import com.couchbase.android.sofapix.db.PixStore
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import javax.inject.Inject
 
 
@@ -33,7 +36,18 @@ class PixVM @Inject constructor(private val nav: Navigator, private val db: PixS
     val pix: MutableLiveData<Pix> = MutableLiveData()
 
     fun fetchPix() {
-        pix.value = db.fetchPix()
+        db.fetchPix()
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                object : CouchbaseResultObserver<Pix?>(CompositeDisposable()) {
+                    override fun onFailure(e: Throwable) {
+                        throw e
+                    }
+
+                    override fun onSuccess(data: Pix?) {
+                        pix.value = data
+                    }
+                })
     }
 
     fun editPict(pict: Pict?) {

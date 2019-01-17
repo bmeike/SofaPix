@@ -16,12 +16,12 @@
 package com.couchbase.android.sofapix.db
 
 import com.couchbase.android.sofapix.time.CLOCK
+import io.reactivex.Observable
+import io.reactivex.Observer
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.disposables.Disposable
 import javax.inject.Inject
 
-
-data class Pict(val id: String, val owner: String, val description: String, val updated: Long, val photo: Any?)
-
-typealias Pix = List<Pict>
 
 private val pix = listOf(
     Pict("feed1", "Louvre", "Waterlilies", CLOCK.now().epochSecond, null),
@@ -29,8 +29,33 @@ private val pix = listOf(
     Pict("feed3", "Rijksmuseum", "The Milkmaid", CLOCK.now().epochSecond, null)
 )
 
-class PixStore @Inject constructor() {
-    fun fetchPix(): Pix = pix
+data class Pict(val id: String, val owner: String, val description: String, val updated: Long, val photo: Any?)
 
-    fun fetchPict(pictId: String) = pix.firstOrNull { pict -> pict.id == pictId }
+typealias Pix = List<Pict>
+
+abstract class CouchbaseResultObserver<T>(private val compositeDisposable: CompositeDisposable) : Observer<T> {
+
+    final override fun onComplete() {}
+
+    final override fun onSubscribe(d: Disposable) {
+        compositeDisposable.add(d)
+    }
+
+    final override fun onNext(t: T) {
+        onSuccess(t)
+    }
+
+    final override fun onError(e: Throwable) {
+        onFailure(e)
+    }
+
+    abstract fun onSuccess(data: T)
+    abstract fun onFailure(e: Throwable)
+}
+
+class PixStore @Inject constructor() {
+    fun fetchPix(): Observable<Pix> = Observable.just(pix)
+    fun fetchPict(pictId: String): Observable<Pict?> = Observable.just(pix.firstOrNull { pict -> pict.id == pictId })
+    fun updatePict(pictId: String?, owner: String, desc: String) = Unit
+    fun deletePict(pictId: String?) = Unit
 }
