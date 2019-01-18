@@ -25,6 +25,7 @@ import dagger.Module
 import javax.inject.Inject
 import javax.inject.Singleton
 
+
 interface Navigator {
     fun mainPage()
     fun detailPage(pict: Pict?)

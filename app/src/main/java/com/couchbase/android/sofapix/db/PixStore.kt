@@ -30,6 +30,8 @@ import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
 import com.couchbase.lite.Result
 import com.couchbase.lite.SelectResult
+import dagger.Binds
+import dagger.Module
 import io.reactivex.Maybe
 import io.reactivex.Scheduler
 import io.reactivex.Single
@@ -51,11 +53,21 @@ private const val PROP_UPDATED = "updated"
 private const val PROP_PICTURE = "picture"
 
 
-class PixStore @Inject constructor(private val app: SofaPix, @Named("database") dbScheduler: Scheduler) {
+interface PixStore {
+    fun fetchPix(): Single<Pix>
+    fun fetchPict(pictId: String): Maybe<Pict>
+    fun addOrUpdatePict(pictId: String?, owner: String, desc: String): Pict?
+    fun deletePict(pictId: String): Pict?
+}
+
+class CouchbasePixStore @Inject constructor(
+    private val app: SofaPix,
+    @Named("database") dbScheduler: Scheduler
+) : PixStore {
     private val dbDispatcher = dbScheduler.asCoroutineDispatcher()
     private val db by lazy { Database(DB_NAME, DatabaseConfiguration(app)) }
 
-    fun fetchPix(): Single<Pix> = GlobalScope.rxSingle(dbDispatcher) {
+    override fun fetchPix(): Single<Pix> = GlobalScope.rxSingle(dbDispatcher) {
         try {
             return@rxSingle QueryBuilder
                 .select(SelectResult.expression(Meta.id).`as`(PROP_ID), SelectResult.all())
@@ -69,7 +81,7 @@ class PixStore @Inject constructor(private val app: SofaPix, @Named("database") 
         return@rxSingle emptyList<Pict>()
     }
 
-    fun fetchPict(pictId: String): Maybe<Pict> = GlobalScope.rxMaybe(dbDispatcher) {
+    override fun fetchPict(pictId: String): Maybe<Pict> = GlobalScope.rxMaybe(dbDispatcher) {
         try {
             return@rxMaybe pictFromDoc(getPictById(pictId))
         } catch (e: CouchbaseLiteException) {
@@ -79,7 +91,7 @@ class PixStore @Inject constructor(private val app: SofaPix, @Named("database") 
         return@rxMaybe null
     }
 
-    fun addOrUpdatePict(pictId: String?, owner: String, desc: String): Pict? {
+    override fun addOrUpdatePict(pictId: String?, owner: String, desc: String): Pict? {
         return if (pictId == null) {
             addPict(owner, desc)
         } else {
@@ -87,7 +99,7 @@ class PixStore @Inject constructor(private val app: SofaPix, @Named("database") 
         }
     }
 
-    fun deletePict(pictId: String): Pict? {
+    override fun deletePict(pictId: String): Pict? {
         try {
             val doc = getPictById(pictId)
             doc ?: return null
@@ -163,3 +175,9 @@ class PixStore @Inject constructor(private val app: SofaPix, @Named("database") 
     private fun getPictById(pictId: String) = db.getDocument(pictId)
 }
 
+
+@Module
+interface StoreModule {
+    @Binds
+    fun bindsPixStore(store: CouchbasePixStore): PixStore
+}

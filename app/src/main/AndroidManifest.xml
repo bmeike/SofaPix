@@ -45,6 +45,7 @@
         <activity
                 android:name=".DetailActivity"
                 android:theme="@style/SofaPixTheme.NoActionBar"
+                android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
                 />
     </application>
 

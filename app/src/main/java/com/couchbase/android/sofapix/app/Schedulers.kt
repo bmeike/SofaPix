@@ -13,5 +13,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-package com.couchbase.android.sofapix.sched
+package com.couchbase.android.sofapix.app
 
+import dagger.Module
+import dagger.Provides
+import io.reactivex.Scheduler
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
+import javax.inject.Named
+import javax.inject.Singleton
+
+
+@Module
+object SchedulerModule {
+    private val database = Schedulers.single()
+    private val main = AndroidSchedulers.mainThread()
+
+    @Provides
+    @JvmStatic
+    @Singleton
+    @Named("main")
+    fun main(): Scheduler = main
+
+    @Provides
+    @JvmStatic
+    @Singleton
+    @Named("database")
+    fun database(): Scheduler = database
+}

@@ -46,7 +46,7 @@ class PictVM @Inject constructor(
             .subscribe(
                 { data -> pict.value = data },
                 { },
-                { pict.value = null } )
+                { pict.value = null })
     }
 
     fun updatePict(pictId: String?, owner: String, desc: String) {
