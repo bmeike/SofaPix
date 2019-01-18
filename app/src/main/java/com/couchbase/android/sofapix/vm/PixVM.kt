@@ -17,36 +17,39 @@ package com.couchbase.android.sofapix.vm
 
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
-import com.couchbase.android.sofapix.Navigator
-import com.couchbase.android.sofapix.db.CouchbaseResultObserver
-import com.couchbase.android.sofapix.db.Pict
-import com.couchbase.android.sofapix.db.Pix
+import com.couchbase.android.sofapix.app.Navigator
 import com.couchbase.android.sofapix.db.PixStore
+import com.couchbase.android.sofapix.logging.LOG
+import com.couchbase.android.sofapix.model.Pict
+import com.couchbase.android.sofapix.model.Pix
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.Scheduler
 import javax.inject.Inject
+import javax.inject.Named
 
 
 private const val TAG = "PixVM"
 
-class PixVM @Inject constructor(private val nav: Navigator, private val db: PixStore) : ViewModel() {
+class PixVM @Inject constructor(
+    @Named("main") private val mainScheduler: Scheduler,
+    private val nav: Navigator,
+    private val db: PixStore
+) : ViewModel() {
     val pix: MutableLiveData<Pix> = MutableLiveData()
 
     fun fetchPix() {
         db.fetchPix()
-            .observeOn(AndroidSchedulers.mainThread())
+            .observeOn(mainScheduler)
             .subscribe(
-                object : CouchbaseResultObserver<Pix?>(CompositeDisposable()) {
-                    override fun onFailure(e: Throwable) {
-                        throw e
-                    }
-
-                    override fun onSuccess(data: Pix?) {
-                        pix.value = data
-                    }
+                { data ->
+                    LOG.d(TAG, "fetch: ${data.size}")
+                    pix.value = data
+                },
+                { e ->
+                    LOG.e(TAG, "fetch failed!", e)
+                    pix.value = null
                 })
     }
 

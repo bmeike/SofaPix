@@ -17,19 +17,22 @@ package com.couchbase.android.sofapix.vm
 
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
-import com.couchbase.android.sofapix.Navigator
-import com.couchbase.android.sofapix.db.CouchbaseResultObserver
-import com.couchbase.android.sofapix.db.Pict
+import com.couchbase.android.sofapix.app.Navigator
 import com.couchbase.android.sofapix.db.PixStore
+import com.couchbase.android.sofapix.model.Pict
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.Scheduler
 import javax.inject.Inject
+import javax.inject.Named
 
 
-class PictVM @Inject constructor(private val nav: Navigator, private val db: PixStore) : ViewModel() {
+class PictVM @Inject constructor(
+    @Named("main") private val mainScheduler: Scheduler,
+    private val nav: Navigator,
+    private val db: PixStore
+) : ViewModel() {
     val pict: MutableLiveData<Pict?> = MutableLiveData()
 
     fun fetchPict(pictId: String?) {
@@ -39,23 +42,20 @@ class PictVM @Inject constructor(private val nav: Navigator, private val db: Pix
         }
 
         db.fetchPict(pictId)
-            .observeOn(AndroidSchedulers.mainThread())
+            .observeOn(mainScheduler)
             .subscribe(
-                object : CouchbaseResultObserver<Pict?>(CompositeDisposable()) {
-                    override fun onFailure(e: Throwable) {}
-
-                    override fun onSuccess(data: Pict?) {
-                        pict.value = data
-                    }
-                })
+                { data -> pict.value = data },
+                { },
+                { pict.value = null } )
     }
 
     fun updatePict(pictId: String?, owner: String, desc: String) {
-        db.updatePict(pictId, owner, desc)
+        db.addOrUpdatePict(pictId, owner, desc)
         nav.mainPage()
     }
 
     fun deletePict(pictId: String?) {
+        pictId ?: return
         db.deletePict(pictId)
         nav.mainPage()
     }

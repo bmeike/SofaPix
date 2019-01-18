@@ -20,6 +20,7 @@ import android.app.Application
 import com.couchbase.android.sofapix.vm.ViewModelFactory
 import dagger.BindsInstance
 import dagger.Component
+import javax.inject.Singleton
 
 
 var APP: AppFactory? = null
@@ -35,7 +36,8 @@ open class SofaPix : Application() {
     }
 }
 
-@Component
+@Singleton
+@Component(modules = [SchedulerModule::class])
 interface AppFactory {
     @Component.Builder
     interface Builder {

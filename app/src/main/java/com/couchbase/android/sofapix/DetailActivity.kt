@@ -23,7 +23,7 @@ import android.text.format.DateUtils
 import android.view.Menu
 import android.view.MenuItem
 import com.couchbase.android.sofapix.app.APP
-import com.couchbase.android.sofapix.db.Pict
+import com.couchbase.android.sofapix.model.Pict
 import com.couchbase.android.sofapix.vm.PictVM
 import com.couchbase.android.sofapix.vm.VMFactory
 import kotlinx.android.synthetic.main.activity_main.toolbar
@@ -71,7 +71,7 @@ class DetailActivity : AppCompatActivity() {
 
         viewModel = ViewModelProviders.of(this, vmFactory).get(PictVM::class.java)
 
-        viewModel.pict.observe(this, Observer<Pict?> { pict -> setPict(pict) })
+        viewModel.pict.observe(this, Observer { pict -> setPict(pict) })
 
         delete.setOnClickListener { viewModel.deletePict(pictId) }
 

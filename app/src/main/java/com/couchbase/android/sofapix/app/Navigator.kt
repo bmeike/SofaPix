@@ -13,20 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-package com.couchbase.android.sofapix
+package com.couchbase.android.sofapix.app
 
 import android.content.Intent
-import com.couchbase.android.sofapix.app.SofaPix
-import com.couchbase.android.sofapix.db.Pict
+import com.couchbase.android.sofapix.DetailActivity
+import com.couchbase.android.sofapix.MainActivity
+import com.couchbase.android.sofapix.PARAM_PICT_ID
+import com.couchbase.android.sofapix.model.Pict
 import dagger.Binds
 import dagger.Module
 import javax.inject.Inject
+import javax.inject.Singleton
 
 interface Navigator {
     fun mainPage()
     fun detailPage(pict: Pict?)
 }
 
+@Singleton
 class SofaPixNavigator @Inject constructor(private val app: SofaPix) : Navigator {
     override fun mainPage() {
         val intent = Intent(app, MainActivity::class.java)

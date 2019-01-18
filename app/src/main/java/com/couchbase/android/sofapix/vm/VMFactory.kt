@@ -19,8 +19,8 @@ import android.arch.lifecycle.ViewModel
 import android.arch.lifecycle.ViewModelProvider
 import com.couchbase.android.sofapix.DetailActivity
 import com.couchbase.android.sofapix.MainActivity
-import com.couchbase.android.sofapix.NavModule
-import com.couchbase.android.sofapix.logging.LOG
+import com.couchbase.android.sofapix.app.NavModule
+import com.couchbase.android.sofapix.app.ViewScope
 import dagger.MapKey
 import dagger.Subcomponent
 import javax.inject.Inject
@@ -44,12 +44,12 @@ class VMFactory @Inject constructor(
                 ?.value
             ?: throw IllegalArgumentException("Unknown model class: ${modelClass}")
 
-        @Suppress("UNCHECKED_CAST") val model = provider.get() as T
-        LOG.d(TAG, "factory: ${this}, key: ${modelClass}, provider: ${provider}, model: ${model}")
-        return model
+        @Suppress("UNCHECKED_CAST")
+        return provider.get() as T
     }
 }
 
+@ViewScope
 @Subcomponent(modules = [NavModule::class, PixVMModule::class, PictVMModule::class])
 interface ViewModelFactory {
     fun inject(act: MainActivity)

@@ -23,7 +23,7 @@ import android.support.v7.widget.LinearLayoutManager
 import android.view.Menu
 import android.view.MenuItem
 import com.couchbase.android.sofapix.app.APP
-import com.couchbase.android.sofapix.db.Pix
+import com.couchbase.android.sofapix.model.Pix
 import com.couchbase.android.sofapix.view.PixAdapter
 import com.couchbase.android.sofapix.vm.PixVM
 import com.couchbase.android.sofapix.vm.VMFactory

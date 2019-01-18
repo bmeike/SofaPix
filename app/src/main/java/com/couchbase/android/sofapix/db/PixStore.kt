@@ -15,47 +15,151 @@
 //
 package com.couchbase.android.sofapix.db
 
+import com.couchbase.android.sofapix.app.SofaPix
+import com.couchbase.android.sofapix.logging.LOG
+import com.couchbase.android.sofapix.model.Pict
+import com.couchbase.android.sofapix.model.Pix
 import com.couchbase.android.sofapix.time.CLOCK
-import io.reactivex.Observable
-import io.reactivex.Observer
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.disposables.Disposable
+import com.couchbase.lite.CouchbaseLiteException
+import com.couchbase.lite.DataSource
+import com.couchbase.lite.Database
+import com.couchbase.lite.DatabaseConfiguration
+import com.couchbase.lite.Document
+import com.couchbase.lite.Meta
+import com.couchbase.lite.MutableDocument
+import com.couchbase.lite.QueryBuilder
+import com.couchbase.lite.Result
+import com.couchbase.lite.SelectResult
+import io.reactivex.Maybe
+import io.reactivex.Scheduler
+import io.reactivex.Single
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.rx2.asCoroutineDispatcher
+import kotlinx.coroutines.rx2.rxMaybe
+import kotlinx.coroutines.rx2.rxSingle
 import javax.inject.Inject
+import javax.inject.Named
 
 
-private val pix = listOf(
-    Pict("feed1", "Louvre", "Waterlilies", CLOCK.now().epochSecond, null),
-    Pict("feed2", "Prado", "The Dog", CLOCK.now().epochSecond, null),
-    Pict("feed3", "Rijksmuseum", "The Milkmaid", CLOCK.now().epochSecond, null)
-)
+const val TAG = "DB"
 
-data class Pict(val id: String, val owner: String, val description: String, val updated: Long, val photo: Any?)
+private const val DB_NAME = "pixdb"
+private const val PROP_ID = "_id"
+private const val PROP_OWNER = "owner"
+private const val PROP_DESCRIPTION = "description"
+private const val PROP_UPDATED = "updated"
+private const val PROP_PICTURE = "picture"
 
-typealias Pix = List<Pict>
 
-abstract class CouchbaseResultObserver<T>(private val compositeDisposable: CompositeDisposable) : Observer<T> {
+class PixStore @Inject constructor(private val app: SofaPix, @Named("database") dbScheduler: Scheduler) {
+    private val dbDispatcher = dbScheduler.asCoroutineDispatcher()
+    private val db by lazy { Database(DB_NAME, DatabaseConfiguration(app)) }
 
-    final override fun onComplete() {}
+    fun fetchPix(): Single<Pix> = GlobalScope.rxSingle(dbDispatcher) {
+        try {
+            return@rxSingle QueryBuilder
+                .select(SelectResult.expression(Meta.id).`as`(PROP_ID), SelectResult.all())
+                .from(DataSource.database(db))
+                .execute()
+                .map { row -> pictFromResult(row) }
+        } catch (e: CouchbaseLiteException) {
+            LOG.e(TAG, "failed fetching pix", e)
+        }
 
-    final override fun onSubscribe(d: Disposable) {
-        compositeDisposable.add(d)
+        return@rxSingle emptyList<Pict>()
     }
 
-    final override fun onNext(t: T) {
-        onSuccess(t)
+    fun fetchPict(pictId: String): Maybe<Pict> = GlobalScope.rxMaybe(dbDispatcher) {
+        try {
+            return@rxMaybe pictFromDoc(getPictById(pictId))
+        } catch (e: CouchbaseLiteException) {
+            LOG.e(TAG, "failed fetching pict", e)
+        }
+
+        return@rxMaybe null
     }
 
-    final override fun onError(e: Throwable) {
-        onFailure(e)
+    fun addOrUpdatePict(pictId: String?, owner: String, desc: String): Pict? {
+        return if (pictId == null) {
+            addPict(owner, desc)
+        } else {
+            updatePict(pictId, owner, desc)
+        }
     }
 
-    abstract fun onSuccess(data: T)
-    abstract fun onFailure(e: Throwable)
+    fun deletePict(pictId: String): Pict? {
+        try {
+            val doc = getPictById(pictId)
+            doc ?: return null
+            db.delete(doc)
+            return pictFromDoc(doc)
+        } catch (e: CouchbaseLiteException) {
+            LOG.e(TAG, "failed deleting pict", e)
+        }
+
+        return null
+    }
+
+    private fun addPict(owner: String, desc: String): Pict? {
+        val doc = MutableDocument()
+        doc.setString(PROP_OWNER, owner)
+        doc.setString(PROP_DESCRIPTION, desc)
+        doc.setLong(PROP_UPDATED, CLOCK.now().epochSecond)
+        return saveDocument(doc)
+    }
+
+    private fun updatePict(pictId: String, owner: String, desc: String): Pict? {
+        val doc = getPictById(pictId).toMutable()
+        doc ?: return null
+
+        var updated = false
+
+        if (doc.getString(PROP_OWNER) != owner) {
+            doc.setString(PROP_OWNER, owner)
+            updated = true
+        }
+
+        if (doc.getString(PROP_DESCRIPTION) != desc) {
+            doc.setString(PROP_DESCRIPTION, desc)
+            updated = true
+        }
+
+        if (!updated) {
+            return pictFromDoc(doc)
+        }
+
+        doc.setLong(PROP_UPDATED, CLOCK.now().epochSecond)
+        return saveDocument(doc)
+    }
+
+    private fun saveDocument(doc: MutableDocument): Pict? {
+        try {
+            db.save(doc)
+            return pictFromDoc(doc)
+        } catch (e: CouchbaseLiteException) {
+            LOG.e(TAG, "failed saving pict", e)
+        }
+
+        return null
+    }
+
+    private fun pictFromDoc(doc: Document): Pict = Pict(
+        doc.id,
+        doc.getString(PROP_OWNER),
+        doc.getString(PROP_DESCRIPTION),
+        doc.getLong(PROP_UPDATED)
+    )
+
+    private fun pictFromResult(result: Result): Pict {
+        val props = result.getDictionary(DB_NAME)
+        return Pict(
+            result.getString(PROP_ID),
+            props.getString(PROP_OWNER),
+            props.getString(PROP_DESCRIPTION),
+            props.getLong(PROP_UPDATED)
+        )
+    }
+
+    private fun getPictById(pictId: String) = db.getDocument(pictId)
 }
 
-class PixStore @Inject constructor() {
-    fun fetchPix(): Observable<Pix> = Observable.just(pix)
-    fun fetchPict(pictId: String): Observable<Pict?> = Observable.just(pix.firstOrNull { pict -> pict.id == pictId })
-    fun updatePict(pictId: String?, owner: String, desc: String) = Unit
-    fun deletePict(pictId: String?) = Unit
-}

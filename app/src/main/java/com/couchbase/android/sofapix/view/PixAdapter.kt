@@ -22,8 +22,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.couchbase.android.sofapix.R
-import com.couchbase.android.sofapix.db.Pict
-import com.couchbase.android.sofapix.db.Pix
+import com.couchbase.android.sofapix.model.Pict
+import com.couchbase.android.sofapix.model.Pix
 import com.couchbase.android.sofapix.vm.PixVM
 
 class PixAdapter(private val vm: PixVM) : RecyclerView.Adapter<PictViewHolder>() {
