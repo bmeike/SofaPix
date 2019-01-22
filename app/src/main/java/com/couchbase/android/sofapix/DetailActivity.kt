@@ -15,25 +15,34 @@
 //
 package com.couchbase.android.sofapix
 
+import android.app.Activity
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
+import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.text.format.DateUtils
 import android.view.Menu
 import android.view.MenuItem
 import com.couchbase.android.sofapix.app.APP
+import com.couchbase.android.sofapix.logging.LOG
 import com.couchbase.android.sofapix.model.Pict
 import com.couchbase.android.sofapix.vm.PictVM
 import com.couchbase.android.sofapix.vm.VMFactory
 import kotlinx.android.synthetic.main.activity_main.toolbar
 import kotlinx.android.synthetic.main.content_detail.delete
 import kotlinx.android.synthetic.main.content_detail.description
+import kotlinx.android.synthetic.main.content_detail.image
 import kotlinx.android.synthetic.main.content_detail.owner
 import kotlinx.android.synthetic.main.content_detail.update
 import kotlinx.android.synthetic.main.content_detail.updated
 import javax.inject.Inject
 
+
+private const val TAG = "DETS"
+
+private const val ACTION_CHOOSE_IMAGE = 7001
 
 const val PARAM_PICT_ID = "sofapix.PICT_ID"
 
@@ -44,7 +53,34 @@ class DetailActivity : AppCompatActivity() {
 
     private lateinit var viewModel: PictVM
 
-    private var pictId: String? = null
+    //
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        APP?.vmFactory()?.inject(this)
+
+        setContentView(R.layout.activity_detail)
+
+        setSupportActionBar(toolbar)
+
+        viewModel = ViewModelProviders.of(this, vmFactory).get(PictVM::class.java)
+        viewModel.pictId = intent.getStringExtra(PARAM_PICT_ID)
+
+        viewModel.pict.observe(this, Observer { pict -> showPict(pict) })
+        viewModel.image.observe(this, Observer { image -> showImage(image) })
+
+        image.setOnClickListener { getCameraRollPhoto() }
+
+        delete.setOnClickListener { viewModel.deletePict() }
+
+        update.setOnClickListener { viewModel.updatePict(owner.text.toString(), description.text.toString()) }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.fetchPict()
+    }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
@@ -58,32 +94,33 @@ class DetailActivity : AppCompatActivity() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (resultCode != Activity.RESULT_OK) {
+            LOG.w(TAG, "Request to external activity failed: $requestCode, $resultCode")
+            return
+        }
 
-        APP?.vmFactory()?.inject(this)
-
-        pictId = intent.getStringExtra(PARAM_PICT_ID)
-
-        setContentView(R.layout.activity_detail)
-
-        setSupportActionBar(toolbar)
-
-        viewModel = ViewModelProviders.of(this, vmFactory).get(PictVM::class.java)
-
-        viewModel.pict.observe(this, Observer { pict -> setPict(pict) })
-
-        delete.setOnClickListener { viewModel.deletePict(pictId) }
-
-        update.setOnClickListener { viewModel.updatePict(pictId, owner.text.toString(), description.text.toString()) }
+        when (requestCode) {
+            ACTION_CHOOSE_IMAGE -> {
+                val uri = data?.data
+                uri ?: return
+                viewModel.fetchImageFromUri(uri)
+            }
+            else -> LOG.w(TAG, "Unrecognized request: ${requestCode}")
+        }
     }
 
-    override fun onResume() {
-        super.onResume()
-        viewModel.fetchPict(pictId)
+    private fun getCameraRollPhoto() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+        intent.type = "image/*"
+
+        startActivityForResult(
+            Intent.createChooser(intent, getString(R.string.get_pict_from_camera_roll)),
+            ACTION_CHOOSE_IMAGE
+        )
     }
 
-    private fun setPict(pict: Pict?) {
+    private fun showPict(pict: Pict?) {
         owner.setText(pict?.owner)
         description.setText(pict?.description)
         updated.text = if (pict == null) {
@@ -91,5 +128,9 @@ class DetailActivity : AppCompatActivity() {
         } else {
             DateUtils.getRelativeTimeSpanString(pict.updated * 1000)
         }
+    }
+
+    private fun showImage(bitmap: Bitmap?) {
+        image.setImageBitmap(bitmap)
     }
 }

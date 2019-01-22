@@ -10,8 +10,8 @@
 
     <ImageView
             android:id="@+id/thumb"
-            android:layout_width="@dimen/thumb_size"
-            android:layout_height="@dimen/thumb_size"
+            android:layout_width="@dimen/thumb_height"
+            android:layout_height="@dimen/thumb_height"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:srcCompat="@mipmap/ic_launcher"

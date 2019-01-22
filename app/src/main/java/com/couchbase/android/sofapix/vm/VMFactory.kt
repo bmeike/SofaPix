@@ -21,7 +21,8 @@ import com.couchbase.android.sofapix.DetailActivity
 import com.couchbase.android.sofapix.MainActivity
 import com.couchbase.android.sofapix.app.NavModule
 import com.couchbase.android.sofapix.app.ViewScope
-import com.couchbase.android.sofapix.db.StoreModule
+import com.couchbase.android.sofapix.db.PixStoreModule
+import com.couchbase.android.sofapix.images.ImageMgrModule
 import dagger.MapKey
 import dagger.Subcomponent
 import javax.inject.Inject
@@ -49,7 +50,14 @@ class VMFactory @Inject constructor(
 }
 
 @ViewScope
-@Subcomponent(modules = [NavModule::class, StoreModule::class, PixVMModule::class, PictVMModule::class])
+@Subcomponent(
+    modules = [
+        NavModule::class,
+        ImageMgrModule::class,
+        PixStoreModule::class,
+        PixVMModule::class,
+        PictVMModule::class]
+)
 interface ViewModelFactory {
     fun inject(act: MainActivity)
     fun inject(act: DetailActivity)

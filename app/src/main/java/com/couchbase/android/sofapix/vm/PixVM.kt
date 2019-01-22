@@ -17,44 +17,54 @@ package com.couchbase.android.sofapix.vm
 
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
+import android.graphics.Bitmap
 import com.couchbase.android.sofapix.app.Navigator
 import com.couchbase.android.sofapix.db.PixStore
+import com.couchbase.android.sofapix.images.ImageManager
 import com.couchbase.android.sofapix.logging.LOG
 import com.couchbase.android.sofapix.model.Pict
 import com.couchbase.android.sofapix.model.Pix
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
-import io.reactivex.Scheduler
+import io.reactivex.Single
+import io.reactivex.disposables.Disposable
 import javax.inject.Inject
-import javax.inject.Named
 
 
 private const val TAG = "PixVM"
 
 class PixVM @Inject constructor(
-    @Named("main") private val mainScheduler: Scheduler,
     private val nav: Navigator,
+    private val imageMgr: ImageManager,
     private val db: PixStore
 ) : ViewModel() {
     val pix: MutableLiveData<Pix> = MutableLiveData()
 
+    // should be cancelled if the MutableData loses all observers
+    private var loader: Disposable? = null
+
     fun fetchPix() {
-        db.fetchPix()
-            .observeOn(mainScheduler)
-            .subscribe(
-                { data ->
-                    LOG.d(TAG, "fetch: ${data.size}")
-                    pix.value = data
-                },
-                { e ->
-                    LOG.e(TAG, "fetch failed!", e)
-                    pix.value = null
-                })
+        loader = db.fetchPix().subscribe(
+            { data ->
+                LOG.d(TAG, "got pix: ${data.size}")
+                showPix(data)
+            },
+            { e ->
+                LOG.e(TAG, "failed fetching pix", e)
+                showPix(null)
+            })
     }
+
+    fun loadImage(image: ByteArray): Single<Bitmap> = imageMgr.getImageFromByteArray(image)
 
     fun editPict(pict: Pict?) {
         nav.detailPage(pict)
+    }
+
+    private fun showPix(data: Pix?) {
+        loader = null
+        pix.value = data
     }
 }
 

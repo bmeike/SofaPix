@@ -18,6 +18,7 @@ package com.couchbase.android.sofapix
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.view.Menu
@@ -65,7 +66,7 @@ class MainActivity : AppCompatActivity() {
 
         pixList.hasFixedSize()
         pixList.layoutManager = LinearLayoutManager(this)
-        adapter = PixAdapter(viewModel)
+        adapter = PixAdapter(viewModel, ContextCompat.getDrawable(this, R.mipmap.ic_launcher)!!)
         pixList.adapter = adapter
 
         viewModel.pix.observe(this, Observer<Pix> { pix -> adapter.setPix(pix) })

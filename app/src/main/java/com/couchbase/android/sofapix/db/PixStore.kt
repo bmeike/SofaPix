@@ -20,11 +20,13 @@ import com.couchbase.android.sofapix.logging.LOG
 import com.couchbase.android.sofapix.model.Pict
 import com.couchbase.android.sofapix.model.Pix
 import com.couchbase.android.sofapix.time.CLOCK
+import com.couchbase.lite.Blob
 import com.couchbase.lite.CouchbaseLiteException
 import com.couchbase.lite.DataSource
 import com.couchbase.lite.Database
 import com.couchbase.lite.DatabaseConfiguration
 import com.couchbase.lite.Document
+import com.couchbase.lite.Expression
 import com.couchbase.lite.Meta
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
@@ -41,6 +43,7 @@ import kotlinx.coroutines.rx2.rxMaybe
 import kotlinx.coroutines.rx2.rxSingle
 import javax.inject.Inject
 import javax.inject.Named
+import javax.inject.Singleton
 
 
 const val TAG = "DB"
@@ -50,19 +53,28 @@ private const val PROP_ID = "_id"
 private const val PROP_OWNER = "owner"
 private const val PROP_DESCRIPTION = "description"
 private const val PROP_UPDATED = "updated"
-private const val PROP_PICTURE = "picture"
+private const val PROP_THUMBNAIL = "thumb"
+private const val PROP_IMAGE = "image"
 
 
 interface PixStore {
     fun fetchPix(): Single<Pix>
     fun fetchPict(pictId: String): Maybe<Pict>
-    fun addOrUpdatePict(pictId: String?, owner: String, desc: String): Pict?
     fun deletePict(pictId: String): Pict?
+    fun addOrUpdatePict(
+        pictId: String?,
+        owner: String,
+        desc: String,
+        thumb: ByteArray? = null,
+        image: ByteArray? = null
+    ): Pict?
 }
 
+@Singleton
 class CouchbasePixStore @Inject constructor(
     private val app: SofaPix,
-    @Named("database") dbScheduler: Scheduler
+    @Named("database") private val dbScheduler: Scheduler,
+    @Named("main") private val mainScheduler: Scheduler
 ) : PixStore {
     private val dbDispatcher = dbScheduler.asCoroutineDispatcher()
     private val db by lazy { Database(DB_NAME, DatabaseConfiguration(app)) }
@@ -70,7 +82,13 @@ class CouchbasePixStore @Inject constructor(
     override fun fetchPix(): Single<Pix> = GlobalScope.rxSingle(dbDispatcher) {
         try {
             return@rxSingle QueryBuilder
-                .select(SelectResult.expression(Meta.id).`as`(PROP_ID), SelectResult.all())
+                .select(
+                    SelectResult.expression(Meta.id).`as`(PROP_ID),
+                    SelectResult.expression(Expression.property(PROP_OWNER)),
+                    SelectResult.expression(Expression.property(PROP_DESCRIPTION)),
+                    SelectResult.expression(Expression.property(PROP_UPDATED)),
+                    SelectResult.expression(Expression.property(PROP_THUMBNAIL))
+                )
                 .from(DataSource.database(db))
                 .execute()
                 .map { row -> pictFromResult(row) }
@@ -79,7 +97,8 @@ class CouchbasePixStore @Inject constructor(
         }
 
         return@rxSingle emptyList<Pict>()
-    }
+    }.observeOn(mainScheduler)
+
 
     override fun fetchPict(pictId: String): Maybe<Pict> = GlobalScope.rxMaybe(dbDispatcher) {
         try {
@@ -89,13 +108,19 @@ class CouchbasePixStore @Inject constructor(
         }
 
         return@rxMaybe null
-    }
+    }.observeOn(mainScheduler)
 
-    override fun addOrUpdatePict(pictId: String?, owner: String, desc: String): Pict? {
+    override fun addOrUpdatePict(
+        pictId: String?,
+        owner: String,
+        desc: String,
+        thumb: ByteArray?,
+        image: ByteArray?
+    ): Pict? {
         return if (pictId == null) {
             addPict(owner, desc)
         } else {
-            updatePict(pictId, owner, desc)
+            updatePict(pictId, owner, desc, thumb, image)
         }
     }
 
@@ -103,6 +128,7 @@ class CouchbasePixStore @Inject constructor(
         try {
             val doc = getPictById(pictId)
             doc ?: return null
+
             db.delete(doc)
             return pictFromDoc(doc)
         } catch (e: CouchbaseLiteException) {
@@ -120,7 +146,7 @@ class CouchbasePixStore @Inject constructor(
         return saveDocument(doc)
     }
 
-    private fun updatePict(pictId: String, owner: String, desc: String): Pict? {
+    private fun updatePict(pictId: String, owner: String, desc: String, thumb: ByteArray?, image: ByteArray?): Pict? {
         val doc = getPictById(pictId).toMutable()
         doc ?: return null
 
@@ -133,6 +159,16 @@ class CouchbasePixStore @Inject constructor(
 
         if (doc.getString(PROP_DESCRIPTION) != desc) {
             doc.setString(PROP_DESCRIPTION, desc)
+            updated = true
+        }
+
+        if (thumb != null) {
+            doc.setBlob(PROP_THUMBNAIL, Blob(PROP_THUMBNAIL, thumb))
+            updated = true
+        }
+
+        if (image != null) {
+            doc.setBlob(PROP_IMAGE, Blob(PROP_IMAGE, image))
             updated = true
         }
 
@@ -155,29 +191,32 @@ class CouchbasePixStore @Inject constructor(
         return null
     }
 
-    private fun pictFromDoc(doc: Document): Pict = Pict(
-        doc.id,
-        doc.getString(PROP_OWNER),
-        doc.getString(PROP_DESCRIPTION),
-        doc.getLong(PROP_UPDATED)
-    )
+    private fun pictFromDoc(doc: Document): Pict {
+        return Pict(
+            id = doc.id,
+            owner = doc.getString(PROP_OWNER) ?: "",
+            description = doc.getString(PROP_DESCRIPTION) ?: "",
+            updated = doc.getLong(PROP_UPDATED),
+            thumb = doc.getBlob(PROP_THUMBNAIL)?.content,
+            image = doc.getBlob(PROP_IMAGE)?.content
+        )
+    }
 
     private fun pictFromResult(result: Result): Pict {
-        val props = result.getDictionary(DB_NAME)
         return Pict(
-            result.getString(PROP_ID),
-            props.getString(PROP_OWNER),
-            props.getString(PROP_DESCRIPTION),
-            props.getLong(PROP_UPDATED)
+            id = result.getString(PROP_ID),
+            owner = result.getString(PROP_OWNER),
+            description = result.getString(PROP_DESCRIPTION),
+            updated = result.getLong(PROP_UPDATED),
+            thumb = result.getBlob(PROP_THUMBNAIL)?.content
         )
     }
 
     private fun getPictById(pictId: String) = db.getDocument(pictId)
 }
 
-
 @Module
-interface StoreModule {
+interface PixStoreModule {
     @Binds
     fun bindsPixStore(store: CouchbasePixStore): PixStore
 }

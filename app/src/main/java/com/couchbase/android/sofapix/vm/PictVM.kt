@@ -17,46 +17,114 @@ package com.couchbase.android.sofapix.vm
 
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
+import android.graphics.Bitmap
+import android.net.Uri
 import com.couchbase.android.sofapix.app.Navigator
 import com.couchbase.android.sofapix.db.PixStore
+import com.couchbase.android.sofapix.images.ImageManager
+import com.couchbase.android.sofapix.logging.LOG
 import com.couchbase.android.sofapix.model.Pict
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap
-import io.reactivex.Scheduler
+import io.reactivex.disposables.Disposable
 import javax.inject.Inject
-import javax.inject.Named
 
+
+private const val TAG = "PICTVM"
 
 class PictVM @Inject constructor(
-    @Named("main") private val mainScheduler: Scheduler,
     private val nav: Navigator,
-    private val db: PixStore
+    private val db: PixStore,
+    private val imageMgr: ImageManager
 ) : ViewModel() {
     val pict: MutableLiveData<Pict?> = MutableLiveData()
+    val image: MutableLiveData<Bitmap?> = MutableLiveData()
+    var pictId: String? = null
 
-    fun fetchPict(pictId: String?) {
-        if (pictId == null) {
-            pict.value = null
+    // should be cancelled if the MutableDatas lose all observers
+    private var loader: Disposable? = null
+
+    fun fetchPict() {
+        val pid = pictId ?: return
+
+        loader = db.fetchPict(pid).subscribe(
+            { data ->
+                LOG.d(TAG, "fetched pict: ${pictId}")
+                showPict(data)
+            },
+            { err ->
+                LOG.w(TAG, "failed fetching pict: ${pictId}", err)
+                showPict(null)
+            })
+    }
+
+    fun fetchImageFromUri(uri: Uri) {
+        loader = imageMgr.fetchImageFromUri(uri).subscribe(
+            { data ->
+                LOG.w(TAG, "fetched image from: ${uri}")
+                showImage(data)
+            },
+            { err ->
+                LOG.w(TAG, "failed fetching image from: ${uri}", err)
+                showImage(null)
+            })
+    }
+
+    fun updatePict(owner: String, desc: String) {
+        val bmp = image.value
+
+        if (bmp == null) {
+            db.addOrUpdatePict(pictId, owner, desc)
+        } else {
+            loader = imageMgr.getImageWithThumbnail(bmp).subscribe(
+                { data ->
+                    LOG.w(TAG, "resized image for: ${pictId}")
+                    db.addOrUpdatePict(pictId, owner, desc, data.thumb, data.image)
+                },
+                { err ->
+                    LOG.w(TAG, "failed resizing image for: ${pictId}", err)
+                    db.addOrUpdatePict(pictId, owner, desc)
+                })
+        }
+        exit()
+    }
+
+    fun deletePict() {
+        val pid = pictId ?: return
+        db.deletePict(pid)
+        exit()
+    }
+
+    private fun showPict(data: Pict?) {
+        loader = null
+
+        pict.value = data
+
+        if (image.value != null) {
+            showImage(image.value)
             return
         }
 
-        db.fetchPict(pictId)
-            .observeOn(mainScheduler)
-            .subscribe(
-                { data -> pict.value = data },
-                { },
-                { pict.value = null })
+        val image = data?.image ?: return
+        loader = imageMgr.getImageFromByteArray(image).subscribe(
+            { img ->
+                LOG.d(TAG, "loaded image for : ${data.id}")
+                showImage(img)
+            },
+            { err ->
+                LOG.w(TAG, "failed fetching image for : ${data.id}", err)
+                showImage(null)
+            })
     }
 
-    fun updatePict(pictId: String?, owner: String, desc: String) {
-        db.addOrUpdatePict(pictId, owner, desc)
-        nav.mainPage()
+    private fun showImage(data: Bitmap?) {
+        loader = null
+        image.value = data
     }
 
-    fun deletePict(pictId: String?) {
-        pictId ?: return
-        db.deletePict(pictId)
+    private fun exit() {
+        image.value = null
         nav.mainPage()
     }
 }

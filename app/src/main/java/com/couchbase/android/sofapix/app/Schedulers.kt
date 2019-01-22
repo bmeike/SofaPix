@@ -26,7 +26,8 @@ import javax.inject.Singleton
 
 @Module
 object SchedulerModule {
-    private val database = Schedulers.single()
+    private val worker = Schedulers.single()
+    private val database = Schedulers.single() // == worker thread, for now
     private val main = AndroidSchedulers.mainThread()
 
     @Provides
@@ -40,4 +41,10 @@ object SchedulerModule {
     @Singleton
     @Named("database")
     fun database(): Scheduler = database
+
+    @Provides
+    @JvmStatic
+    @Singleton
+    @Named("worker")
+    fun worker(): Scheduler = worker
 }

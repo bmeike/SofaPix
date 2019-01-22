@@ -32,6 +32,7 @@ var APP: AppFactory? = null
 open class SofaPix : Application() {
     override fun onCreate() {
         super.onCreate()
+
         APP = DaggerAppFactory.builder().app(this).build()
     }
 }
@@ -48,5 +49,6 @@ interface AppFactory {
     }
 
     fun app(): SofaPix
+
     fun vmFactory(): ViewModelFactory
 }

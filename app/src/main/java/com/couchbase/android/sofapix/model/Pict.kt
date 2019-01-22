@@ -15,7 +15,40 @@
 //
 package com.couchbase.android.sofapix.model
 
+import com.couchbase.android.sofapix.time.CLOCK
 
-data class Pict(val id: String, val owner: String, val description: String, val updated: Long, val photo: Any? = null)
+
+data class Pict(
+    val id: String? = null,
+    val owner: String = "",
+    val description: String = "",
+    val updated: Long = CLOCK.now().epochSecond,
+    val image: ByteArray? = null,
+    val thumb: ByteArray? = null
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Pict
+
+        if (id != other.id) return false
+        if (owner != other.owner) return false
+        if (description != other.description) return false
+        if (updated != other.updated) return false
+        if (thumb !== other.thumb) return false
+        if (image !== other.image) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id?.hashCode() ?: 0
+        result = 31 * result + owner.hashCode()
+        result = 31 * result + description.hashCode()
+        result = 31 * result + updated.hashCode()
+        return result
+    }
+}
 
 typealias Pix = List<Pict>
