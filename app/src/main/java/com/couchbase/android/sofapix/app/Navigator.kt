@@ -26,6 +26,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 
+@Module
+interface NavModule {
+    @Binds
+    fun bindsNavigator(nav: SofaPixNavigator): Navigator
+}
+
 interface Navigator {
     fun mainPage()
     fun detailPage(pict: Pict?)
@@ -47,10 +53,4 @@ class SofaPixNavigator @Inject constructor(private val app: SofaPix) : Navigator
         }
         app.startActivity(intent)
     }
-}
-
-@Module
-interface NavModule {
-    @Binds
-    fun bindsNavigator(nav: SofaPixNavigator): Navigator
 }

@@ -18,13 +18,15 @@ package com.couchbase.android.sofapix.time
 import android.os.SystemClock
 import org.threeten.bp.Instant
 
+
+const val MS_PER_SEC = 1000L
+
 var CLOCK: Clock = StandardClock
     private set(clock) {
         field = clock
     }
 
 // Allow unit tests to control time.
-@Suppress("FunctionNaming")
 fun SET_CLOCK(clock: Clock) {
     CLOCK = clock
 }

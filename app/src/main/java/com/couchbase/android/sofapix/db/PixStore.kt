@@ -34,11 +34,13 @@ import com.couchbase.lite.Result
 import com.couchbase.lite.SelectResult
 import dagger.Binds
 import dagger.Module
+import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Scheduler
 import io.reactivex.Single
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.rx2.asCoroutineDispatcher
+import kotlinx.coroutines.rx2.rxCompletable
 import kotlinx.coroutines.rx2.rxMaybe
 import kotlinx.coroutines.rx2.rxSingle
 import javax.inject.Inject
@@ -56,25 +58,24 @@ private const val PROP_UPDATED = "updated"
 private const val PROP_THUMBNAIL = "thumb"
 private const val PROP_IMAGE = "image"
 
+@Module
+interface PixStoreModule {
+    @Binds
+    fun bindsPixStore(store: CouchbasePixStore): PixStore
+}
 
 interface PixStore {
     fun fetchPix(): Single<Pix>
     fun fetchPict(pictId: String): Maybe<Pict>
-    fun deletePict(pictId: String): Pict?
-    fun addOrUpdatePict(
-        pictId: String?,
-        owner: String,
-        desc: String,
-        thumb: ByteArray? = null,
-        image: ByteArray? = null
-    ): Pict?
+    fun deletePict(pictId: String): Completable
+    fun addOrUpdatePict(pictId: String?, owner: String, desc: String, thumb: ByteArray?, image: ByteArray?): Completable
 }
 
 @Singleton
 class CouchbasePixStore @Inject constructor(
     private val app: SofaPix,
-    @Named("database") private val dbScheduler: Scheduler,
-    @Named("main") private val mainScheduler: Scheduler
+    @Named("main") private val mainScheduler: Scheduler,
+    @Named("database") private val dbScheduler: Scheduler
 ) : PixStore {
     private val dbDispatcher = dbScheduler.asCoroutineDispatcher()
     private val db by lazy { Database(DB_NAME, DatabaseConfiguration(app)) }
@@ -91,7 +92,7 @@ class CouchbasePixStore @Inject constructor(
                 )
                 .from(DataSource.database(db))
                 .execute()
-                .map { row -> pictFromResult(row) }
+                .map { row -> row.toPict() }
         } catch (e: CouchbaseLiteException) {
             LOG.e(TAG, "failed fetching pix", e)
         }
@@ -102,7 +103,7 @@ class CouchbasePixStore @Inject constructor(
 
     override fun fetchPict(pictId: String): Maybe<Pict> = GlobalScope.rxMaybe(dbDispatcher) {
         try {
-            return@rxMaybe pictFromDoc(getPictById(pictId))
+            return@rxMaybe getPictById(pictId).toPict()
         } catch (e: CouchbaseLiteException) {
             LOG.e(TAG, "failed fetching pict", e)
         }
@@ -111,79 +112,59 @@ class CouchbasePixStore @Inject constructor(
     }.observeOn(mainScheduler)
 
     override fun addOrUpdatePict(
-        pictId: String?,
-        owner: String,
-        desc: String,
-        thumb: ByteArray?,
-        image: ByteArray?
-    ): Pict? {
-        return if (pictId == null) {
-            addPict(owner, desc)
+        pictId: String?, owner: String, desc: String, thumb: ByteArray?, image: ByteArray?
+    ): Completable = GlobalScope.rxCompletable(dbDispatcher) {
+        if (pictId == null) {
+            addPict(owner, desc, thumb, image)
         } else {
             updatePict(pictId, owner, desc, thumb, image)
         }
-    }
+    }.observeOn(mainScheduler)
 
-    override fun deletePict(pictId: String): Pict? {
+    override fun deletePict(pictId: String): Completable = GlobalScope.rxCompletable(dbDispatcher) {
         try {
             val doc = getPictById(pictId)
-            doc ?: return null
-
-            db.delete(doc)
-            return pictFromDoc(doc)
+            if (doc != null) {
+                db.delete(doc)
+            }
         } catch (e: CouchbaseLiteException) {
             LOG.e(TAG, "failed deleting pict", e)
         }
+    }.observeOn(mainScheduler)
 
-        return null
-    }
-
-    private fun addPict(owner: String, desc: String): Pict? {
+    private fun addPict(owner: String, desc: String, thumb: ByteArray?, image: ByteArray?): Pict? {
         val doc = MutableDocument()
         doc.setString(PROP_OWNER, owner)
         doc.setString(PROP_DESCRIPTION, desc)
         doc.setLong(PROP_UPDATED, CLOCK.now().epochSecond)
+
+        if (thumb != null) {
+            doc.setBlob(PROP_THUMBNAIL, Blob(PROP_THUMBNAIL, thumb))
+        }
+
+        if (image != null) {
+            doc.setBlob(PROP_IMAGE, Blob(PROP_IMAGE, image))
+        }
+
         return saveDocument(doc)
     }
 
     private fun updatePict(pictId: String, owner: String, desc: String, thumb: ByteArray?, image: ByteArray?): Pict? {
         val doc = getPictById(pictId).toMutable()
-        doc ?: return null
 
-        var updated = false
-
-        if (doc.getString(PROP_OWNER) != owner) {
-            doc.setString(PROP_OWNER, owner)
-            updated = true
-        }
-
-        if (doc.getString(PROP_DESCRIPTION) != desc) {
-            doc.setString(PROP_DESCRIPTION, desc)
-            updated = true
-        }
-
-        if (thumb != null) {
-            doc.setBlob(PROP_THUMBNAIL, Blob(PROP_THUMBNAIL, thumb))
-            updated = true
-        }
-
-        if (image != null) {
-            doc.setBlob(PROP_IMAGE, Blob(PROP_IMAGE, image))
-            updated = true
-        }
-
-        if (!updated) {
-            return pictFromDoc(doc)
+        if (doc?.updatePict(owner, desc, thumb, image) == false) {
+            return doc.toPict()
         }
 
         doc.setLong(PROP_UPDATED, CLOCK.now().epochSecond)
+
         return saveDocument(doc)
     }
 
     private fun saveDocument(doc: MutableDocument): Pict? {
         try {
             db.save(doc)
-            return pictFromDoc(doc)
+            return doc.toPict()
         } catch (e: CouchbaseLiteException) {
             LOG.e(TAG, "failed saving pict", e)
         }
@@ -191,32 +172,52 @@ class CouchbasePixStore @Inject constructor(
         return null
     }
 
-    private fun pictFromDoc(doc: Document): Pict {
-        return Pict(
-            id = doc.id,
-            owner = doc.getString(PROP_OWNER) ?: "",
-            description = doc.getString(PROP_DESCRIPTION) ?: "",
-            updated = doc.getLong(PROP_UPDATED),
-            thumb = doc.getBlob(PROP_THUMBNAIL)?.content,
-            image = doc.getBlob(PROP_IMAGE)?.content
-        )
-    }
-
-    private fun pictFromResult(result: Result): Pict {
-        return Pict(
-            id = result.getString(PROP_ID),
-            owner = result.getString(PROP_OWNER),
-            description = result.getString(PROP_DESCRIPTION),
-            updated = result.getLong(PROP_UPDATED),
-            thumb = result.getBlob(PROP_THUMBNAIL)?.content
-        )
-    }
-
     private fun getPictById(pictId: String) = db.getDocument(pictId)
 }
 
-@Module
-interface PixStoreModule {
-    @Binds
-    fun bindsPixStore(store: CouchbasePixStore): PixStore
+fun Result.toPict(): Pict {
+    return Pict(
+        id = getString(PROP_ID),
+        owner = getString(PROP_OWNER),
+        description = getString(PROP_DESCRIPTION),
+        updated = getLong(PROP_UPDATED),
+        thumb = getBlob(PROP_THUMBNAIL)?.content
+    )
+}
+
+fun Document.toPict(): Pict {
+    return Pict(
+        id = id,
+        owner = getString(PROP_OWNER) ?: "",
+        description = getString(PROP_DESCRIPTION) ?: "",
+        updated = getLong(PROP_UPDATED),
+        thumb = getBlob(PROP_THUMBNAIL)?.content,
+        image = getBlob(PROP_IMAGE)?.content
+    )
+}
+
+fun MutableDocument.updatePict(owner: String, desc: String, thumb: ByteArray?, image: ByteArray?): Boolean {
+    var updated = false
+
+    if (this.getString(PROP_OWNER) != owner) {
+        this.setString(PROP_OWNER, owner)
+        updated = true
+    }
+
+    if (this.getString(PROP_DESCRIPTION) != desc) {
+        this.setString(PROP_DESCRIPTION, desc)
+        updated = true
+    }
+
+    if (thumb != null) {
+        this.setBlob(PROP_THUMBNAIL, Blob(PROP_THUMBNAIL, thumb))
+        updated = true
+    }
+
+    if (image != null) {
+        this.setBlob(PROP_IMAGE, Blob(PROP_IMAGE, image))
+        updated = true
+    }
+
+    return updated
 }

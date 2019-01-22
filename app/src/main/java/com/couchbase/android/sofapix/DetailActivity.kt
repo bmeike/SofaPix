@@ -16,6 +16,8 @@
 package com.couchbase.android.sofapix
 
 import android.app.Activity
+import android.app.Dialog
+import android.app.ProgressDialog
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.content.Intent
@@ -28,6 +30,7 @@ import android.view.MenuItem
 import com.couchbase.android.sofapix.app.APP
 import com.couchbase.android.sofapix.logging.LOG
 import com.couchbase.android.sofapix.model.Pict
+import com.couchbase.android.sofapix.time.MS_PER_SEC
 import com.couchbase.android.sofapix.vm.PictVM
 import com.couchbase.android.sofapix.vm.VMFactory
 import kotlinx.android.synthetic.main.activity_main.toolbar
@@ -53,7 +56,7 @@ class DetailActivity : AppCompatActivity() {
 
     private lateinit var viewModel: PictVM
 
-    //
+    private var progressDialog: Dialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,7 +77,7 @@ class DetailActivity : AppCompatActivity() {
 
         delete.setOnClickListener { viewModel.deletePict() }
 
-        update.setOnClickListener { viewModel.updatePict(owner.text.toString(), description.text.toString()) }
+        update.setOnClickListener { updatePict(owner.text.toString(), description.text.toString()) }
     }
 
     override fun onResume() {
@@ -126,11 +129,36 @@ class DetailActivity : AppCompatActivity() {
         updated.text = if (pict == null) {
             null
         } else {
-            DateUtils.getRelativeTimeSpanString(pict.updated * 1000)
+            DateUtils.getRelativeTimeSpanString(pict.updated * MS_PER_SEC)
         }
+    }
+
+    private fun updatePict(owner: String, desc: String) {
+        showLoadingDialog()
+        viewModel.updatePict(owner, desc)
+        viewModel.loading.observe(this, Observer { loading ->
+            if (loading?.not() == true) {
+                hideLoadingDialog()
+                viewModel.exit()
+            }
+        })
     }
 
     private fun showImage(bitmap: Bitmap?) {
         image.setImageBitmap(bitmap)
+    }
+
+    private fun showLoadingDialog() {
+        progressDialog = ProgressDialog.show(
+            this,
+            getString(R.string.just_a_moment),
+            getString(R.string.loading_photo),
+            false,
+            false
+        )
+    }
+
+    private fun hideLoadingDialog() {
+        progressDialog?.dismiss()
     }
 }

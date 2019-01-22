@@ -19,4 +19,6 @@
     <string name="delete">delete</string>
 
     <string name="get_pict_from_camera_roll">Select a picture</string>
+    <string name="loading_photo">Loading photo</string>
+    <string name="just_a_moment">Just a moment…</string>
 </resources>

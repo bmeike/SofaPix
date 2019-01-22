@@ -34,6 +34,14 @@ import javax.inject.Inject
 
 private const val TAG = "PixVM"
 
+@Module
+interface PixVMModule {
+    @Binds
+    @IntoMap
+    @ViewModelKey(PixVM::class)
+    fun bindViewModel(vm: PixVM): ViewModel
+}
+
 class PixVM @Inject constructor(
     private val nav: Navigator,
     private val imageMgr: ImageManager,
@@ -47,7 +55,7 @@ class PixVM @Inject constructor(
     fun fetchPix() {
         loader = db.fetchPix().subscribe(
             { data ->
-                LOG.d(TAG, "got pix: ${data.size}")
+                LOG.d(TAG, "fetched pix: ${data.size}")
                 showPix(data)
             },
             { e ->
@@ -66,12 +74,4 @@ class PixVM @Inject constructor(
         loader = null
         pix.value = data
     }
-}
-
-@Module
-interface PixVMModule {
-    @Binds
-    @IntoMap
-    @ViewModelKey(PixVM::class)
-    fun bindViewModel(vm: PixVM): ViewModel
 }

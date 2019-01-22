@@ -26,9 +26,9 @@ import javax.inject.Singleton
 
 @Module
 object SchedulerModule {
-    private val worker = Schedulers.single()
-    private val database = Schedulers.single() // == worker thread, for now
     private val main = AndroidSchedulers.mainThread()
+    private val database = Schedulers.single()
+    private val worker = Schedulers.single() // == db thread, for now
 
     @Provides
     @JvmStatic

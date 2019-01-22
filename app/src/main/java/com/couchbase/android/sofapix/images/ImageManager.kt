@@ -19,6 +19,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import com.couchbase.android.sofapix.app.SofaPix
+import com.couchbase.android.sofapix.logging.LOG
 import dagger.Binds
 import dagger.Module
 import io.reactivex.Scheduler
@@ -32,31 +33,16 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 
-private const val THUMB_SIZE = 128F
+private const val TAG = "IMGMGR"
 
-fun Bitmap.toByteArray(): ByteArray {
-    val stream = ByteArrayOutputStream()
-    this.compress(Bitmap.CompressFormat.PNG, 100, stream)
-    return stream.toByteArray()
+private const val THUMB_SIZE = 64F
+private const val IMAGE_PRECISION_PCT = 100
+
+@Module
+interface ImageMgrModule {
+    @Binds
+    fun bindsImageManager(store: BitmapImageManager): ImageManager
 }
-
-fun Bitmap.fitToSquare(size: Float): Bitmap {
-    val h = this.height.toFloat()
-    val w = this.width.toFloat()
-
-    val scale = size / Math.max(h, w)
-
-    return if (scale >= 1F) {
-        Bitmap.createBitmap(this)
-    } else {
-        Bitmap.createScaledBitmap(this, Math.round(w * scale), Math.round(h * scale), true)
-    }
-}
-
-class ImageWithThumbnail(
-    val image: ByteArray? = null,
-    val thumb: ByteArray? = null
-)
 
 interface ImageManager {
     fun fetchImageFromUri(imageUri: Uri): Single<Bitmap>
@@ -64,11 +50,16 @@ interface ImageManager {
     fun getImageWithThumbnail(image: Bitmap): Single<ImageWithThumbnail>
 }
 
+class ImageWithThumbnail(
+    val image: ByteArray? = null,
+    val thumb: ByteArray? = null
+)
+
 @Singleton
 class BitmapImageManager @Inject constructor(
     private val app: SofaPix,
-    @Named("worker") private val workScheduler: Scheduler,
-    @Named("main") private val mainScheduler: Scheduler
+    @Named("main") private val mainScheduler: Scheduler,
+    @Named("worker") private val workScheduler: Scheduler
 ) : ImageManager {
     private val workDispatcher = workScheduler.asCoroutineDispatcher()
 
@@ -86,8 +77,24 @@ class BitmapImageManager @Inject constructor(
         }.observeOn(mainScheduler)
 }
 
-@Module
-interface ImageMgrModule {
-    @Binds
-    fun bindsImageManager(store: BitmapImageManager): ImageManager
+fun Bitmap.toByteArray(): ByteArray {
+    val stream = ByteArrayOutputStream()
+    this.compress(Bitmap.CompressFormat.PNG, IMAGE_PRECISION_PCT, stream)
+    return stream.toByteArray()
+}
+
+fun Bitmap.fitToSquare(size: Float): Bitmap {
+    val h = this.height.toFloat()
+    val w = this.width.toFloat()
+
+    val scale = size / Math.max(h, w)
+
+    val bmp = if (scale >= 1F) {
+        Bitmap.createBitmap(this)
+    } else {
+        Bitmap.createScaledBitmap(this, Math.round(w * scale), Math.round(h * scale), true)
+    }
+    LOG.d(TAG, "scaled bitmap from ${this.byteCount} to ${bmp.byteCount}")
+
+    return bmp
 }

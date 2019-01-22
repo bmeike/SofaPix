@@ -23,20 +23,6 @@ import dagger.Component
 import javax.inject.Singleton
 
 
-var APP: AppFactory? = null
-    private set(appFactory) {
-        field = appFactory
-    }
-
-@SuppressLint("Registered")
-open class SofaPix : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        APP = DaggerAppFactory.builder().app(this).build()
-    }
-}
-
 @Singleton
 @Component(modules = [SchedulerModule::class])
 interface AppFactory {
@@ -51,4 +37,18 @@ interface AppFactory {
     fun app(): SofaPix
 
     fun vmFactory(): ViewModelFactory
+}
+
+var APP: AppFactory? = null
+    private set(appFactory) {
+        field = appFactory
+    }
+
+@SuppressLint("Registered")
+open class SofaPix : Application() {
+    override fun onCreate() {
+        super.onCreate()
+
+        APP = DaggerAppFactory.builder().app(this).build()
+    }
 }

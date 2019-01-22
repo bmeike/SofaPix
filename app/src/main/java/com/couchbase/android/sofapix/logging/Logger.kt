@@ -21,7 +21,6 @@ var LOG: Logger = NullLogger
         field = logger
     }
 
-@Suppress("FunctionNaming")
 fun SET_LOGGER(logger: Logger) {
     LOG = logger
 }

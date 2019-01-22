@@ -33,22 +33,6 @@ import kotlin.reflect.KClass
 @MapKey
 annotation class ViewModelKey(val value: KClass<out ViewModel>)
 
-class VMFactory @Inject constructor(
-    private val providers: Map<Class<out ViewModel>, @JvmSuppressWildcards Provider<ViewModel>>
-) : ViewModelProvider.Factory {
-
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        val provider = providers[modelClass]
-            ?: providers.asIterable()
-                .firstOrNull { modelClass.isAssignableFrom(it.key) }
-                ?.value
-            ?: throw IllegalArgumentException("Unknown model class: ${modelClass}")
-
-        @Suppress("UNCHECKED_CAST")
-        return provider.get() as T
-    }
-}
-
 @ViewScope
 @Subcomponent(
     modules = [
@@ -61,4 +45,19 @@ class VMFactory @Inject constructor(
 interface ViewModelFactory {
     fun inject(act: MainActivity)
     fun inject(act: DetailActivity)
+}
+
+class VMFactory @Inject constructor(
+    private val providers: Map<Class<out ViewModel>, @JvmSuppressWildcards Provider<ViewModel>>
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        val provider = providers[modelClass]
+            ?: providers.asIterable()
+                .firstOrNull { modelClass.isAssignableFrom(it.key) }
+                ?.value
+            ?: throw IllegalArgumentException("Unknown model class: ${modelClass}")
+
+        @Suppress("UNCHECKED_CAST")
+        return provider.get() as T
+    }
 }

@@ -15,6 +15,7 @@
 //
 package com.couchbase.android.sofapix.vm
 
+import android.annotation.SuppressLint
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import android.graphics.Bitmap
@@ -33,6 +34,14 @@ import javax.inject.Inject
 
 private const val TAG = "PICTVM"
 
+@Module
+interface PictVMModule {
+    @Binds
+    @IntoMap
+    @ViewModelKey(PictVM::class)
+    fun bindViewModel(vm: PictVM): ViewModel
+}
+
 class PictVM @Inject constructor(
     private val nav: Navigator,
     private val db: PixStore,
@@ -40,9 +49,10 @@ class PictVM @Inject constructor(
 ) : ViewModel() {
     val pict: MutableLiveData<Pict?> = MutableLiveData()
     val image: MutableLiveData<Bitmap?> = MutableLiveData()
+    val loading: MutableLiveData<Boolean> = MutableLiveData()
+
     var pictId: String? = null
 
-    // should be cancelled if the MutableDatas lose all observers
     private var loader: Disposable? = null
 
     fun fetchPict() {
@@ -71,29 +81,39 @@ class PictVM @Inject constructor(
             })
     }
 
+    @SuppressLint("CheckResult")
+    fun deletePict() {
+        val pid = pictId ?: return
+        loader = db.deletePict(pid).subscribe { exit() }
+    }
+
     fun updatePict(owner: String, desc: String) {
+        loading.value = true
+
         val bmp = image.value
 
         if (bmp == null) {
-            db.addOrUpdatePict(pictId, owner, desc)
+            addOrUpdatePict(pictId, owner, desc)
         } else {
             loader = imageMgr.getImageWithThumbnail(bmp).subscribe(
                 { data ->
                     LOG.w(TAG, "resized image for: ${pictId}")
-                    db.addOrUpdatePict(pictId, owner, desc, data.thumb, data.image)
+                    addOrUpdatePict(pictId, owner, desc, data.thumb, data.image)
                 },
                 { err ->
                     LOG.w(TAG, "failed resizing image for: ${pictId}", err)
-                    db.addOrUpdatePict(pictId, owner, desc)
+                    addOrUpdatePict(pictId, owner, desc)
                 })
         }
-        exit()
     }
 
-    fun deletePict() {
-        val pid = pictId ?: return
-        db.deletePict(pid)
-        exit()
+    fun exit() {
+        loader?.dispose()
+        loader = null
+
+        image.value = null
+
+        nav.mainPage()
     }
 
     private fun showPict(data: Pict?) {
@@ -123,16 +143,16 @@ class PictVM @Inject constructor(
         image.value = data
     }
 
-    private fun exit() {
-        image.value = null
-        nav.mainPage()
+    private fun addOrUpdatePict(
+        pictId: String?,
+        owner: String,
+        desc: String,
+        thumb: ByteArray? = null,
+        image: ByteArray? = null
+    ) {
+        loader = db.addOrUpdatePict(pictId, owner, desc, thumb, image).subscribe {
+            loader = null
+            loading.value = false
+        }
     }
-}
-
-@Module
-interface PictVMModule {
-    @Binds
-    @IntoMap
-    @ViewModelKey(PictVM::class)
-    fun bindViewModel(vm: PictVM): ViewModel
 }

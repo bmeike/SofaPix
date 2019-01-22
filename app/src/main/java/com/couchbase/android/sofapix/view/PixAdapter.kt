@@ -30,11 +30,10 @@ import com.couchbase.android.sofapix.model.Pict
 import com.couchbase.android.sofapix.model.Pix
 import com.couchbase.android.sofapix.vm.PixVM
 import io.reactivex.disposables.Disposable
+import com.couchbase.android.sofapix.time.MS_PER_SEC
 
 
 private const val TAG = "PIXADAPT"
-
-private const val MS_PER_SEC = 1000L
 
 class PixAdapter(private val vm: PixVM, private val placeholder: Drawable) : RecyclerView.Adapter<PictViewHolder>() {
     private var pix: Pix? = null
@@ -128,5 +127,4 @@ class PictViewHolder(
             thumbView.setImageDrawable(placeholder)
         }
     }
-
 }

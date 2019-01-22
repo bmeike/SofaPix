@@ -18,6 +18,8 @@ package com.couchbase.android.sofapix.model
 import com.couchbase.android.sofapix.time.CLOCK
 
 
+typealias Pix = List<Pict>
+
 data class Pict(
     val id: String? = null,
     val owner: String = "",
@@ -50,5 +52,3 @@ data class Pict(
         return result
     }
 }
-
-typealias Pix = List<Pict>
