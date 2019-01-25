@@ -74,4 +74,8 @@ class PixVM @Inject constructor(
         loader = null
         pix.value = data
     }
+
+    fun login() {
+        nav.loginPage()
+    }
 }

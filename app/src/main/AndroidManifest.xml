@@ -20,6 +20,14 @@
         package="com.couchbase.android.sofapix"
         >
 
+    <!-- Account permissions -->
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS "/>
+    <uses-permission
+            android:name="android.permission.GET_ACCOUNTS"
+            android:maxSdkVersion="22"
+            />
+
     <application
             tools:ignore="GoogleAppIndexingWarning"
             android:name=".app.SofaPixApp"
@@ -30,6 +38,7 @@
             android:supportsRtl="true"
             android:allowBackup="true"
             android:fullBackupContent="@xml/backup_rules"
+            android:requiredAccountType="@string/account_type"
             >
         <activity
                 android:name=".MainActivity"
@@ -44,9 +53,29 @@
         </activity>
         <activity
                 android:name=".DetailActivity"
+                android:label="@string/details"
                 android:theme="@style/SofaPixTheme.NoActionBar"
                 android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
                 />
+        <activity
+                android:name=".LoginActivity"
+                android:label="@string/login"
+                android:theme="@style/SofaPixTheme.NoActionBar"
+                android:windowSoftInputMode="stateAlwaysHidden|adjustResize"
+                />
+
+        <service
+                android:exported="false"
+                android:name=".auth.AuthenticatorService"
+                >
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator"/>
+            </intent-filter>
+            <meta-data
+                    android:name="android.accounts.AccountAuthenticator"
+                    android:resource="@xml/authenticator"
+                    />
+        </service>
     </application>
 
 </manifest>

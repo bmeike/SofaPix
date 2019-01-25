@@ -1,24 +1,44 @@
 <resources>
     <string name="app_name">SofaPix</string>
 
-    <string name="action_settings">Settings</string>
+    <!-- Menu -->
+    <string name="login">Login</string>
+    <string name="action_login">Login</string>
 
+    <!-- Main Activity -->
     <string name="pict_thumb">picture thumbnail</string>
+
+    <!-- Detail Activity -->
+    <string name="details">Details</string>
 
     <string name="pict_desc">a picture</string>
 
-    <string name="pict_owner_label">Owner:</string>
-    <string name="pict_owner_hint">The Louvre</string>
+    <string name="label_owner">Owner:</string>
+    <string name="hint_owner">The Louvre</string>
 
-    <string name="pict_updated_label">Updated:</string>
+    <string name="label_updated">Updated:</string>
 
-    <string name="pict_description_label">Description:</string>
-    <string name="pict_description_hint">I took this picture while in…</string>
+    <string name="label_description">Description:</string>
+    <string name="hint_description">I took this picture while in…</string>
 
     <string name="update">update</string>
     <string name="delete">delete</string>
 
     <string name="get_pict_from_camera_roll">Select a picture</string>
-    <string name="loading_photo">Loading photo</string>
+
     <string name="just_a_moment">Just a moment…</string>
+    <string name="loading_photo">Loading photo</string>
+
+    <!-- Login Activity -->
+    <string name="label_username">Username:</string>
+    <string name="hint_username">username</string>
+
+    <string name="label_password">Password:</string>
+    <string name="hint_password">password</string>
+
+    <!-- Auth -->
+    <string name="account_type">com.couchbase.android.sofapix.ACCOUNT</string>
+    <string name="unrecognized_account_type">Unrecognized account type</string>
+    <string name="logging_in">Logging in</string>
+
 </resources>

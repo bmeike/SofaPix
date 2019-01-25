@@ -45,11 +45,11 @@
             android:id="@+id/updated_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintBottom_toTopOf="@+id/owner_label"
             app:layout_constraintTop_toBottomOf="@+id/image"
+            app:layout_constraintBottom_toTopOf="@+id/owner_label"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginTop="@dimen/medium_pad"
-            android:hint="@string/pict_updated_label"
+            android:text="@string/label_updated"
             style="@style/SofaPixTheme.Text.Bold"
             />
 
@@ -72,7 +72,7 @@
             app:layout_constraintBottom_toTopOf="@+id/description_label"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginTop="@dimen/medium_pad"
-            android:hint="@string/pict_owner_label"
+            android:text="@string/label_owner"
             style="@style/SofaPixTheme.Text.Bold"
             />
 
@@ -86,7 +86,7 @@
             android:layout_marginStart="@dimen/large_pad"
             android:inputType="textPersonName"
             android:importantForAutofill="no"
-            android:hint="@string/pict_owner_hint"
+            android:hint="@string/hint_owner"
             tools:targetApi="o"
             />
 
@@ -98,7 +98,7 @@
             app:layout_constraintBottom_toTopOf="@+id/description"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginTop="@dimen/large_pad"
-            android:hint="@string/pict_description_label"
+            android:text="@string/label_description"
             style="@style/SofaPixTheme.Text.Bold"
             />
 
@@ -116,7 +116,7 @@
             android:inputType="textMultiLine"
             android:importantForAutofill="no"
             android:background="@android:color/transparent"
-            android:hint="@string/pict_description_hint"
+            android:hint="@string/hint_description"
             tools:targetApi="o"
             />
 

@@ -15,23 +15,25 @@
 //
 package com.couchbase.android.sofapix.db
 
-import com.couchbase.android.sofapix.app.SofaPix
 import com.couchbase.android.sofapix.logging.LOG
 import com.couchbase.android.sofapix.model.Pict
 import com.couchbase.android.sofapix.model.Pix
 import com.couchbase.android.sofapix.time.CLOCK
+import com.couchbase.lite.AbstractReplicator
+import com.couchbase.lite.BasicAuthenticator
 import com.couchbase.lite.Blob
-import com.couchbase.lite.CouchbaseLiteException
 import com.couchbase.lite.DataSource
 import com.couchbase.lite.Database
-import com.couchbase.lite.DatabaseConfiguration
 import com.couchbase.lite.Document
 import com.couchbase.lite.Expression
 import com.couchbase.lite.Meta
 import com.couchbase.lite.MutableDocument
 import com.couchbase.lite.QueryBuilder
+import com.couchbase.lite.Replicator
+import com.couchbase.lite.ReplicatorConfiguration
 import com.couchbase.lite.Result
 import com.couchbase.lite.SelectResult
+import com.couchbase.lite.URLEndpoint
 import dagger.Binds
 import dagger.Module
 import io.reactivex.Completable
@@ -43,16 +45,20 @@ import kotlinx.coroutines.rx2.asCoroutineDispatcher
 import kotlinx.coroutines.rx2.rxCompletable
 import kotlinx.coroutines.rx2.rxMaybe
 import kotlinx.coroutines.rx2.rxSingle
+import java.net.URI
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
 
 
-const val TAG = "DB"
+private const val TAG = "DB"
 
-private const val DB_NAME = "pixdb"
+private const val SYNC_GATEWAY_URI = "ws://10.0.2.2:4984/travel-sample"
+
+private const val DB_NAME = "sofapix"
 private const val PROP_ID = "_id"
 private const val PROP_OWNER = "owner"
+private const val PROP_SHARES = "shares"
 private const val PROP_DESCRIPTION = "description"
 private const val PROP_UPDATED = "updated"
 private const val PROP_THUMBNAIL = "thumb"
@@ -73,42 +79,31 @@ interface PixStore {
 
 @Singleton
 class CouchbasePixStore @Inject constructor(
-    private val app: SofaPix,
-    @Named("main") private val mainScheduler: Scheduler,
-    @Named("database") private val dbScheduler: Scheduler
+    @Named("database") dbScheduler: Scheduler,
+    @Named("main") private val mainScheduler: Scheduler
 ) : PixStore {
     private val dbDispatcher = dbScheduler.asCoroutineDispatcher()
-    private val db by lazy { Database(DB_NAME, DatabaseConfiguration(app)) }
+    private val database: Database? = null
 
     override fun fetchPix(): Single<Pix> = GlobalScope.rxSingle(dbDispatcher) {
-        try {
-            return@rxSingle QueryBuilder
-                .select(
-                    SelectResult.expression(Meta.id).`as`(PROP_ID),
-                    SelectResult.expression(Expression.property(PROP_OWNER)),
-                    SelectResult.expression(Expression.property(PROP_DESCRIPTION)),
-                    SelectResult.expression(Expression.property(PROP_UPDATED)),
-                    SelectResult.expression(Expression.property(PROP_THUMBNAIL))
-                )
-                .from(DataSource.database(db))
-                .execute()
-                .map { row -> row.toPict() }
-        } catch (e: CouchbaseLiteException) {
-            LOG.e(TAG, "failed fetching pix", e)
-        }
+        val db: Database = database ?: return@rxSingle emptyList<Pict>()
 
-        return@rxSingle emptyList<Pict>()
+        return@rxSingle QueryBuilder
+            .select(
+                SelectResult.expression(Meta.id).`as`(PROP_ID),
+                SelectResult.expression(Expression.property(PROP_OWNER)),
+                SelectResult.expression(Expression.property(PROP_DESCRIPTION)),
+                SelectResult.expression(Expression.property(PROP_UPDATED)),
+                SelectResult.expression(Expression.property(PROP_THUMBNAIL))
+            )
+            .from(DataSource.database(db))
+            .execute()
+            .map { row -> row.toPict() }
     }.observeOn(mainScheduler)
 
 
     override fun fetchPict(pictId: String): Maybe<Pict> = GlobalScope.rxMaybe(dbDispatcher) {
-        try {
-            return@rxMaybe getPictById(pictId).toPict()
-        } catch (e: CouchbaseLiteException) {
-            LOG.e(TAG, "failed fetching pict", e)
-        }
-
-        return@rxMaybe null
+        return@rxMaybe getPictById(pictId).toPict()
     }.observeOn(mainScheduler)
 
     override fun addOrUpdatePict(
@@ -122,14 +117,7 @@ class CouchbasePixStore @Inject constructor(
     }.observeOn(mainScheduler)
 
     override fun deletePict(pictId: String): Completable = GlobalScope.rxCompletable(dbDispatcher) {
-        try {
-            val doc = getPictById(pictId)
-            if (doc != null) {
-                db.delete(doc)
-            }
-        } catch (e: CouchbaseLiteException) {
-            LOG.e(TAG, "failed deleting pict", e)
-        }
+        database?.delete(getPictById(pictId))
     }.observeOn(mainScheduler)
 
     private fun addPict(owner: String, desc: String, thumb: ByteArray?, image: ByteArray?): Pict? {
@@ -152,7 +140,7 @@ class CouchbasePixStore @Inject constructor(
     private fun updatePict(pictId: String, owner: String, desc: String, thumb: ByteArray?, image: ByteArray?): Pict? {
         val doc = getPictById(pictId).toMutable()
 
-        if (doc?.updatePict(owner, desc, thumb, image) == false) {
+        if (!doc.updatePict(owner, desc, thumb, image)) {
             return doc.toPict()
         }
 
@@ -162,17 +150,34 @@ class CouchbasePixStore @Inject constructor(
     }
 
     private fun saveDocument(doc: MutableDocument): Pict? {
-        try {
-            db.save(doc)
-            return doc.toPict()
-        } catch (e: CouchbaseLiteException) {
-            LOG.e(TAG, "failed saving pict", e)
-        }
-
-        return null
+        val db: Database = database ?: return null
+        db.save(doc)
+        return doc.toPict()
     }
 
-    private fun getPictById(pictId: String) = db.getDocument(pictId)
+    private fun getPictById(pictId: String) = database?.getDocument(pictId)
+        ?: throw IllegalStateException("no current database")
+
+    private fun startPushAndPullReplicationForCurrentUser(username: String, password: String) {
+        val db: Database = database ?: return
+
+        val config = ReplicatorConfiguration(db, URLEndpoint(URI(SYNC_GATEWAY_URI)))
+        config.replicatorType = ReplicatorConfiguration.ReplicatorType.PUSH_AND_PULL
+        config.isContinuous = true
+        config.authenticator = BasicAuthenticator(username, password)
+
+        val replicator = Replicator(config)
+        replicator.addChangeListener { change ->
+            when (change.replicator.status.activityLevel) {
+                AbstractReplicator.ActivityLevel.IDLE -> LOG.d(TAG, "sync complete")
+                AbstractReplicator.ActivityLevel.STOPPED -> LOG.d(TAG, "sync stopped")
+                AbstractReplicator.ActivityLevel.OFFLINE -> LOG.d(TAG, "sync offline")
+                else -> LOG.d(TAG, "syncing...")
+            }
+        }
+
+        replicator.start()
+    }
 }
 
 fun Result.toPict(): Pict {

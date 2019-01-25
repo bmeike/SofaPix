@@ -17,6 +17,7 @@ package com.couchbase.android.sofapix.app
 
 import android.content.Intent
 import com.couchbase.android.sofapix.DetailActivity
+import com.couchbase.android.sofapix.LoginActivity
 import com.couchbase.android.sofapix.MainActivity
 import com.couchbase.android.sofapix.PARAM_PICT_ID
 import com.couchbase.android.sofapix.model.Pict
@@ -35,13 +36,20 @@ interface NavModule {
 interface Navigator {
     fun mainPage()
     fun detailPage(pict: Pict?)
+    fun loginPage()
 }
 
 @Singleton
 class SofaPixNavigator @Inject constructor(private val app: SofaPix) : Navigator {
+    override fun loginPage() {
+        val intent = Intent(app, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+        app.startActivity(intent)
+    }
+
     override fun mainPage() {
         val intent = Intent(app, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
         app.startActivity(Intent(app, MainActivity::class.java))
     }
 

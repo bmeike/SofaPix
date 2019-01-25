@@ -58,8 +58,8 @@ class ImageWithThumbnail(
 @Singleton
 class BitmapImageManager @Inject constructor(
     private val app: SofaPix,
-    @Named("main") private val mainScheduler: Scheduler,
-    @Named("worker") private val workScheduler: Scheduler
+    @Named("worker") workScheduler: Scheduler,
+    @Named("main") private val mainScheduler: Scheduler
 ) : ImageManager {
     private val workDispatcher = workScheduler.asCoroutineDispatcher()
 

@@ -19,7 +19,7 @@ ext {
     // major version: 1 decimal digit plus a little bit more
     version_major = 1
     // minor version: 3 decimal digits
-    version_minor = 0
+    version_minor = 1
     // patch version: up to 5 decimal digits
     version_patch = 1 // should be build number from build system
 }

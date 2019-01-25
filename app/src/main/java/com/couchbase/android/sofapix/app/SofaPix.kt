@@ -17,9 +17,11 @@ package com.couchbase.android.sofapix.app
 
 import android.annotation.SuppressLint
 import android.app.Application
+import com.couchbase.android.sofapix.R
 import com.couchbase.android.sofapix.vm.ViewModelFactory
 import dagger.BindsInstance
 import dagger.Component
+import javax.inject.Named
 import javax.inject.Singleton
 
 
@@ -32,9 +34,10 @@ interface AppFactory {
 
         @BindsInstance
         fun app(sofaPix: SofaPix): Builder
-    }
 
-    fun app(): SofaPix
+        @BindsInstance
+        fun accountType(@Named("accountType")accountType: String): Builder
+    }
 
     fun vmFactory(): ViewModelFactory
 }
@@ -49,6 +52,9 @@ open class SofaPix : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        APP = DaggerAppFactory.builder().app(this).build()
+        APP = DaggerAppFactory.builder()
+            .app(this)
+            .accountType(getString(R.string.account_type))
+            .build()
     }
 }

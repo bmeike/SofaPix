@@ -25,8 +25,6 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.text.format.DateUtils
-import android.view.Menu
-import android.view.MenuItem
 import com.couchbase.android.sofapix.app.APP
 import com.couchbase.android.sofapix.logging.LOG
 import com.couchbase.android.sofapix.model.Pict
@@ -48,7 +46,6 @@ private const val TAG = "DETS"
 private const val ACTION_CHOOSE_IMAGE = 7001
 
 const val PARAM_PICT_ID = "sofapix.PICT_ID"
-
 
 class DetailActivity : AppCompatActivity() {
     @Inject
@@ -83,18 +80,6 @@ class DetailActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.fetchPict()
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
-        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

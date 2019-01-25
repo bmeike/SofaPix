@@ -18,9 +18,11 @@ package com.couchbase.android.sofapix.vm
 import android.arch.lifecycle.ViewModel
 import android.arch.lifecycle.ViewModelProvider
 import com.couchbase.android.sofapix.DetailActivity
+import com.couchbase.android.sofapix.LoginActivity
 import com.couchbase.android.sofapix.MainActivity
 import com.couchbase.android.sofapix.app.NavModule
 import com.couchbase.android.sofapix.app.ViewScope
+import com.couchbase.android.sofapix.auth.AuthModule
 import com.couchbase.android.sofapix.db.PixStoreModule
 import com.couchbase.android.sofapix.images.ImageMgrModule
 import dagger.MapKey
@@ -37,14 +39,17 @@ annotation class ViewModelKey(val value: KClass<out ViewModel>)
 @Subcomponent(
     modules = [
         NavModule::class,
+        AuthModule::class,
         ImageMgrModule::class,
         PixStoreModule::class,
         PixVMModule::class,
-        PictVMModule::class]
+        PictVMModule::class,
+        LoginVMModule::class]
 )
 interface ViewModelFactory {
     fun inject(act: MainActivity)
     fun inject(act: DetailActivity)
+    fun inject(act: LoginActivity)
 }
 
 class VMFactory @Inject constructor(

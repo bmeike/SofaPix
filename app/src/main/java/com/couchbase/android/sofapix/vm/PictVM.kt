@@ -129,11 +129,11 @@ class PictVM @Inject constructor(
         val image = data?.image ?: return
         loader = imageMgr.getImageFromByteArray(image).subscribe(
             { img ->
-                LOG.d(TAG, "loaded image for : ${data.id}")
+                LOG.d(TAG, "loaded image for: ${data.id}")
                 showImage(img)
             },
             { err ->
-                LOG.w(TAG, "failed fetching image for : ${data.id}", err)
+                LOG.w(TAG, "failed loading image for: ${data.id}", err)
                 showImage(null)
             })
     }
