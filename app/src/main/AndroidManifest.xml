@@ -29,7 +29,6 @@
             />
 
     <application
-            tools:ignore="GoogleAppIndexingWarning"
             android:name=".app.SofaPixApp"
             android:label="@string/app_name"
             android:icon="@mipmap/ic_launcher"
@@ -39,6 +38,7 @@
             android:allowBackup="true"
             android:fullBackupContent="@xml/backup_rules"
             android:requiredAccountType="@string/account_type"
+            tools:ignore="GoogleAppIndexingWarning"
             >
         <activity
                 android:name=".MainActivity"

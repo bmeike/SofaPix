@@ -67,6 +67,6 @@ class AndroidAccounts @Inject constructor(
         }.observeOn(mainScheduler)
 
     private fun findAccount(username: String): Account? {
-        return accountManager.getAccountsByType(accountType).firstOrNull() { account -> account.name == username }
+        return accountManager.getAccountsByType(accountType).firstOrNull { account -> account.name == username }
     }
 }

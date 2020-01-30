@@ -64,6 +64,9 @@ private const val PROP_UPDATED = "updated"
 private const val PROP_THUMBNAIL = "thumb"
 private const val PROP_IMAGE = "image"
 
+private const val MIME_PNG = "image/png"
+
+
 @Module
 interface PixStoreModule {
     @Binds
@@ -162,7 +165,7 @@ class CouchbasePixStore @Inject constructor(
         val db: Database = database ?: return
 
         val config = ReplicatorConfiguration(db, URLEndpoint(URI(SYNC_GATEWAY_URI)))
-        config.replicatorType = ReplicatorConfiguration.ReplicatorType.PUSH_AND_PULL
+        config.replicatorType = ReplicatorTypeHelper.getReplicatorTypeFor(true, true)
         config.isContinuous = true
         config.authenticator = BasicAuthenticator(username, password)
 
@@ -183,8 +186,8 @@ class CouchbasePixStore @Inject constructor(
 fun Result.toPict(): Pict {
     return Pict(
         id = getString(PROP_ID),
-        owner = getString(PROP_OWNER),
-        description = getString(PROP_DESCRIPTION),
+        owner = getString(PROP_OWNER)!!,
+        description = getString(PROP_DESCRIPTION)!!,
         updated = getLong(PROP_UPDATED),
         thumb = getBlob(PROP_THUMBNAIL)?.content
     )

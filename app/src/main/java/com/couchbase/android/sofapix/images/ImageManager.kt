@@ -31,6 +31,9 @@ import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
+import kotlin.math.max
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 
 
 private const val TAG = "IMGMGR"
@@ -87,12 +90,12 @@ fun Bitmap.fitToSquare(size: Float): Bitmap {
     val h = this.height.toFloat()
     val w = this.width.toFloat()
 
-    val scale = size / Math.max(h, w)
+    val scale = size / max(h, w)
 
     val bmp = if (scale >= 1F) {
         Bitmap.createBitmap(this)
     } else {
-        Bitmap.createScaledBitmap(this, Math.round(w * scale), Math.round(h * scale), true)
+        Bitmap.createScaledBitmap(this, (w * scale).roundToInt(), (h * scale).roundToInt(), true)
     }
     LOG.d(TAG, "scaled bitmap from ${this.byteCount} to ${bmp.byteCount}")
 
