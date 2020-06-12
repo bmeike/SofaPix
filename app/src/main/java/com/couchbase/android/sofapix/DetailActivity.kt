@@ -18,13 +18,14 @@ package com.couchbase.android.sofapix
 import android.app.Activity
 import android.app.Dialog
 import android.app.ProgressDialog
-import android.arch.lifecycle.Observer
-import android.arch.lifecycle.ViewModelProviders
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.text.format.DateUtils
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
 import com.couchbase.android.sofapix.app.APP
 import com.couchbase.android.sofapix.logging.LOG
 import com.couchbase.android.sofapix.model.Pict
@@ -37,7 +38,6 @@ import kotlinx.android.synthetic.main.content_detail.description
 import kotlinx.android.synthetic.main.content_detail.image
 import kotlinx.android.synthetic.main.content_detail.owner
 import kotlinx.android.synthetic.main.content_detail.update
-import kotlinx.android.synthetic.main.content_detail.updated
 import javax.inject.Inject
 
 
@@ -83,19 +83,22 @@ class DetailActivity : AppCompatActivity() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (resultCode != Activity.RESULT_OK) {
-            LOG.w(TAG, "Request to external activity failed: $requestCode, $resultCode")
-            return
-        }
-
-        when (requestCode) {
-            ACTION_CHOOSE_IMAGE -> {
+        when {
+            requestCode != ACTION_CHOOSE_IMAGE -> {
+                LOG.w(TAG, "Unrecognized request: ${requestCode}")
+            }
+            resultCode != Activity.RESULT_OK -> {
+                LOG.w(TAG, "Request to external activity failed: $requestCode, $resultCode")
+            }
+            else -> {
                 val uri = data?.data
                 uri ?: return
                 viewModel.fetchImageFromUri(uri)
+                return
             }
-            else -> LOG.w(TAG, "Unrecognized request: ${requestCode}")
         }
+
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     private fun getCameraRollPhoto() {
@@ -111,7 +114,7 @@ class DetailActivity : AppCompatActivity() {
     private fun showPict(pict: Pict?) {
         owner.setText(pict?.owner)
         description.setText(pict?.description)
-        updated.text = if (pict == null) {
+        findViewById<TextView>(R.id.updated).text = if (pict == null) {
             null
         } else {
             DateUtils.getRelativeTimeSpanString(pict.updated * MS_PER_SEC)

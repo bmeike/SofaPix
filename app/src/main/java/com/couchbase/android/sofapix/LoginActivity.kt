@@ -20,10 +20,10 @@ import android.accounts.AccountAuthenticatorResponse
 import android.accounts.AccountManager
 import android.app.Dialog
 import android.app.ProgressDialog
-import android.arch.lifecycle.Observer
-import android.arch.lifecycle.ViewModelProviders
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 import com.couchbase.android.sofapix.app.APP
 import com.couchbase.android.sofapix.auth.KEY_FEATURES

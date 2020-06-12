@@ -22,7 +22,6 @@ import dagger.Binds
 import dagger.Module
 import io.reactivex.Scheduler
 import io.reactivex.Single
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.rx2.asCoroutineDispatcher
 import kotlinx.coroutines.rx2.rxSingle
 import java.util.UUID
@@ -54,7 +53,7 @@ class AndroidAccounts @Inject constructor(
     private val workDispatcher = workScheduler.asCoroutineDispatcher()
 
     override fun createAccount(username: String, password: String) =
-        GlobalScope.rxSingle(workDispatcher) {
+        rxSingle(workDispatcher) {
             var account = findAccount(username)
             if (account == null) {
                 account = Account(username, accountType)

@@ -16,8 +16,8 @@
 package com.couchbase.android.sofapix.vm
 
 import android.accounts.Account
-import android.arch.lifecycle.MutableLiveData
-import android.arch.lifecycle.ViewModel
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import com.couchbase.android.sofapix.app.Navigator
 import com.couchbase.android.sofapix.auth.Accounts
 import dagger.Binds

@@ -15,16 +15,15 @@
 //
 package com.couchbase.android.sofapix
 
-import android.arch.lifecycle.Observer
-import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
 import android.view.Menu
 import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.couchbase.android.sofapix.app.APP
-import com.couchbase.android.sofapix.model.Pix
 import com.couchbase.android.sofapix.view.PixAdapter
 import com.couchbase.android.sofapix.vm.PixVM
 import com.couchbase.android.sofapix.vm.VMFactory
@@ -57,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         adapter = PixAdapter(viewModel, ContextCompat.getDrawable(this, R.mipmap.ic_launcher)!!)
         pixList.adapter = adapter
 
-        viewModel.pix.observe(this, Observer<Pix> { pix -> adapter.setPix(pix) })
+        viewModel.pix.observe(this, Observer { pix -> adapter.setPix(pix) })
 
         fab.setOnClickListener { viewModel.editPict(null) }
     }

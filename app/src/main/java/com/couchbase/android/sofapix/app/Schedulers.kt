@@ -20,6 +20,7 @@ import dagger.Provides
 import io.reactivex.Scheduler
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import java.util.concurrent.Executors
 import javax.inject.Named
 import javax.inject.Singleton
 
@@ -27,23 +28,20 @@ import javax.inject.Singleton
 @Module
 object SchedulerModule {
     private val main = AndroidSchedulers.mainThread()
-    private val database = Schedulers.single()
-    private val worker = Schedulers.single() // == db thread, for now
+    private val database = Schedulers.from(Executors.newSingleThreadExecutor())
+    private val worker = Schedulers.single()
 
     @Provides
-    @JvmStatic
     @Singleton
     @Named("main")
     fun main(): Scheduler = main
 
     @Provides
-    @JvmStatic
     @Singleton
     @Named("database")
     fun database(): Scheduler = database
 
     @Provides
-    @JvmStatic
     @Singleton
     @Named("worker")
     fun worker(): Scheduler = worker

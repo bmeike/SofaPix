@@ -24,7 +24,6 @@ import dagger.Binds
 import dagger.Module
 import io.reactivex.Scheduler
 import io.reactivex.Single
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.rx2.asCoroutineDispatcher
 import kotlinx.coroutines.rx2.rxSingle
 import java.io.ByteArrayOutputStream
@@ -33,7 +32,6 @@ import javax.inject.Named
 import javax.inject.Singleton
 import kotlin.math.max
 import kotlin.math.roundToInt
-import kotlin.math.roundToLong
 
 
 private const val TAG = "IMGMGR"
@@ -66,16 +64,16 @@ class BitmapImageManager @Inject constructor(
 ) : ImageManager {
     private val workDispatcher = workScheduler.asCoroutineDispatcher()
 
-    override fun fetchImageFromUri(imageUri: Uri): Single<Bitmap> = GlobalScope.rxSingle(workDispatcher) {
-        return@rxSingle BitmapFactory.decodeStream(app.contentResolver.openInputStream(imageUri))
+    override fun fetchImageFromUri(imageUri: Uri): Single<Bitmap> = rxSingle(workDispatcher) {
+        return@rxSingle BitmapFactory.decodeStream(app.contentResolver.openInputStream(imageUri)) // !!! blocking!
     }.observeOn(mainScheduler)
 
-    override fun getImageFromByteArray(image: ByteArray): Single<Bitmap> = GlobalScope.rxSingle(workDispatcher) {
+    override fun getImageFromByteArray(image: ByteArray): Single<Bitmap> = rxSingle(workDispatcher) {
         return@rxSingle BitmapFactory.decodeByteArray(image, 0, image.size)
     }.observeOn(mainScheduler)
 
     override fun getImageWithThumbnail(image: Bitmap): Single<ImageWithThumbnail> =
-        GlobalScope.rxSingle(workDispatcher) {
+        rxSingle(workDispatcher) {
             return@rxSingle ImageWithThumbnail(image.fitToSquare(THUMB_SIZE).toByteArray(), image.toByteArray())
         }.observeOn(mainScheduler)
 }

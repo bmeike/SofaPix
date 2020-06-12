@@ -20,7 +20,6 @@ import com.couchbase.android.sofapix.model.Pict
 import com.couchbase.android.sofapix.model.Pix
 import com.couchbase.android.sofapix.time.CLOCK
 import com.couchbase.lite.AbstractReplicator
-import com.couchbase.lite.BasicAuthenticator
 import com.couchbase.lite.Blob
 import com.couchbase.lite.DataSource
 import com.couchbase.lite.Database
@@ -40,7 +39,6 @@ import io.reactivex.Completable
 import io.reactivex.Maybe
 import io.reactivex.Scheduler
 import io.reactivex.Single
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.rx2.asCoroutineDispatcher
 import kotlinx.coroutines.rx2.rxCompletable
 import kotlinx.coroutines.rx2.rxMaybe
@@ -88,7 +86,7 @@ class CouchbasePixStore @Inject constructor(
     private val dbDispatcher = dbScheduler.asCoroutineDispatcher()
     private val database: Database? = null
 
-    override fun fetchPix(): Single<Pix> = GlobalScope.rxSingle(dbDispatcher) {
+    override fun fetchPix(): Single<Pix> = rxSingle(dbDispatcher) {
         val db: Database = database ?: return@rxSingle emptyList<Pict>()
 
         return@rxSingle QueryBuilder
@@ -105,13 +103,13 @@ class CouchbasePixStore @Inject constructor(
     }.observeOn(mainScheduler)
 
 
-    override fun fetchPict(pictId: String): Maybe<Pict> = GlobalScope.rxMaybe(dbDispatcher) {
+    override fun fetchPict(pictId: String): Maybe<Pict> = rxMaybe(dbDispatcher) {
         return@rxMaybe getPictById(pictId).toPict()
     }.observeOn(mainScheduler)
 
     override fun addOrUpdatePict(
         pictId: String?, owner: String, desc: String, thumb: ByteArray?, image: ByteArray?
-    ): Completable = GlobalScope.rxCompletable(dbDispatcher) {
+    ): Completable = rxCompletable(dbDispatcher) {
         if (pictId == null) {
             addPict(owner, desc, thumb, image)
         } else {
@@ -119,7 +117,7 @@ class CouchbasePixStore @Inject constructor(
         }
     }.observeOn(mainScheduler)
 
-    override fun deletePict(pictId: String): Completable = GlobalScope.rxCompletable(dbDispatcher) {
+    override fun deletePict(pictId: String): Completable = rxCompletable(dbDispatcher) {
         database?.delete(getPictById(pictId))
     }.observeOn(mainScheduler)
 
@@ -167,7 +165,7 @@ class CouchbasePixStore @Inject constructor(
         val config = ReplicatorConfiguration(db, URLEndpoint(URI(SYNC_GATEWAY_URI)))
         config.replicatorType = ReplicatorTypeHelper.getReplicatorTypeFor(true, true)
         config.isContinuous = true
-        config.authenticator = BasicAuthenticator(username, password)
+        //config.authenticator = BasicAuthenticator(username, password)
 
         val replicator = Replicator(config)
         replicator.addChangeListener { change ->

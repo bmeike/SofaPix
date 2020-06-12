@@ -15,8 +15,8 @@
 //
 package com.couchbase.android.sofapix.vm
 
-import android.arch.lifecycle.MutableLiveData
-import android.arch.lifecycle.ViewModel
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import android.graphics.Bitmap
 import com.couchbase.android.sofapix.app.Navigator
 import com.couchbase.android.sofapix.db.PixStore

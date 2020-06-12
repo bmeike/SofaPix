@@ -16,8 +16,8 @@
 package com.couchbase.android.sofapix.vm
 
 import android.annotation.SuppressLint
-import android.arch.lifecycle.MutableLiveData
-import android.arch.lifecycle.ViewModel
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import android.graphics.Bitmap
 import android.net.Uri
 import com.couchbase.android.sofapix.app.Navigator

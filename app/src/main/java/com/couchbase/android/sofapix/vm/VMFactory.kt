@@ -15,8 +15,8 @@
 //
 package com.couchbase.android.sofapix.vm
 
-import android.arch.lifecycle.ViewModel
-import android.arch.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.couchbase.android.sofapix.DetailActivity
 import com.couchbase.android.sofapix.LoginActivity
 import com.couchbase.android.sofapix.MainActivity
